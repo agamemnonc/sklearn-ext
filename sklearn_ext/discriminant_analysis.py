@@ -513,20 +513,17 @@ class LinearDiscriminantAnalysis(BaseEstimator, LinearClassifierMixin,
         C : array, shape (n_samples, n_classes)
             Estimated probabilities.
         """
-        
+        prob = self.decision_function(X)
         if len(self.classes_) == 2:
-            prob = self.decision_function(X)
             prob *= -1
             np.exp(prob, prob)
             prob += 1
             np.reciprocal(prob, prob)
             return np.column_stack([1 - prob, prob])
-        
         else:
-            values = self.decision_function(X)
             # compute the likelihood of the underlying gaussian models
             # up to a multiplicative constant.
-            likelihood = np.exp(values - values.max(axis=1)[:, np.newaxis])
+            likelihood = np.exp(prob - prob.max(axis=1)[:, np.newaxis])
             # compute posterior probabilities
             return likelihood / likelihood.sum(axis=1)[:, np.newaxis]
 
