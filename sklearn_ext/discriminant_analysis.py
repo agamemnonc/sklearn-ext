@@ -20,7 +20,8 @@ from sklearn.externals.six.moves import xrange
 
 from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
 from sklearn.linear_model.base import LinearClassifierMixin
-from sklearn.covariance import ledoit_wolf, empirical_covariance, shrunk_covariance
+from sklearn.covariance import ledoit_wolf, empirical_covariance,
+from sklearn.covariance import shrunk_covariance
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted
@@ -56,7 +57,8 @@ def _cov(X, shrinkage=None):
             sc = StandardScaler()  # standardize features
             X = sc.fit_transform(X)
             s = ledoit_wolf(X)[0]
-            s = sc.scale_[:, np.newaxis] * s * sc.scale_[np.newaxis, :]  # rescale
+            s = sc.scale_[:, np.newaxis] * s * \
+                sc.scale_[np.newaxis, :]  # rescale
         elif shrinkage == 'empirical':
             s = empirical_covariance(X)
         else:
@@ -147,7 +149,8 @@ class LinearDiscriminantAnalysis(BaseEstimator, LinearClassifierMixin,
        *LinearDiscriminantAnalysis*.
 
     .. versionchanged:: 0.17
-       Deprecated :class:`lda.LDA` have been moved to *LinearDiscriminantAnalysis*.
+       Deprecated :class:`lda.LDA` have been moved to
+       *LinearDiscriminantAnalysis*.
 
     Parameters
     ----------
@@ -249,6 +252,7 @@ class LinearDiscriminantAnalysis(BaseEstimator, LinearClassifierMixin,
     >>> print(clf.predict([[-0.8, -1]]))
     [1]
     """
+
     def __init__(self, solver='svd', shrinkage=None, priors=None,
                  n_components=None, store_covariance=False, tol=1e-4):
         self.solver = solver
@@ -413,7 +417,8 @@ class LinearDiscriminantAnalysis(BaseEstimator, LinearClassifierMixin,
            training data and parameters.
 
            .. versionchanged:: 0.17
-              Deprecated *store_covariance* have been moved to main constructor.
+              Deprecated *store_covariance* have been moved to main
+              constructor.
 
            .. versionchanged:: 0.17
               Deprecated *tol* have been moved to main constructor.
@@ -542,6 +547,7 @@ class LinearDiscriminantAnalysis(BaseEstimator, LinearClassifierMixin,
         """
         return np.log(self.predict_proba(X))
 
+
 class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
     """
     Regularized Discriminant Analysis
@@ -613,8 +619,9 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
     >>> clf = RegularizedDiscriminantAnalysis()
     >>> clf.fit(X, y)
     ... # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
-    RegularizedDiscriminantAnalysis(priors=None, reg_param_alpha=0.5, reg_param_gamma=0.0,
-                                  shrinkage=None, tol=0.0001)
+    RegularizedDiscriminantAnalysis(priors=None, reg_param_alpha=0.5,
+                                    reg_param_gamma=0.0, shrinkage=None,
+                                    tol=0.0001)
     >>> print(clf.predict([[-0.8, -1]]))
     [1]
 
@@ -667,7 +674,8 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
             self.priors_ = self.priors
 
         pooledcov = _class_cov(X, y, self.priors_, self.shrinkage)
-        self.pooled_covariance_ = (1-self.reg_param_gamma) *  pooledcov + self.reg_param_gamma * np.diag(np.diag(pooledcov))      
+        self.pooled_covariance_ = (1 - self.reg_param_gamma) * \
+            pooledcov + self.reg_param_gamma * np.diag(np.diag(pooledcov))
         cov = []
         means = []
         quad_coef = []
@@ -679,30 +687,36 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
             if len(Xg) == 1:
                 raise ValueError('y has only 1 sample in class %s, covariance '
                                  'is ill defined.' % str(self.classes_[ind]))
-        
+
             covg = np.atleast_2d(_cov(Xg, self.shrinkage))
-            covg = (1-self.reg_param_gamma) * covg + self.reg_param_gamma * np.diag(np.diag(covg))
-            covg = self.reg_param_alpha * covg + (1-self.reg_param_alpha)* self.pooled_covariance_ 
-            
+            covg = (1 - self.reg_param_gamma) * covg + \
+                self.reg_param_gamma * np.diag(np.diag(covg))
+            covg = self.reg_param_alpha * covg + \
+                (1 - self.reg_param_alpha) * self.pooled_covariance_
+
             U, S, V = np.linalg.svd(covg)
-            temp1 = np.dot(U, np.dot(np.diag(1/S), U.T))
+            temp1 = np.dot(U, np.dot(np.diag(1 / S), U.T))
             temp2 = np.dot(meang, temp1)
-            
-            intercept.append(-0.5 * (np.dot(temp2, meang) + np.linalg.slogdet(covg)[1]) + np.log(self.priors_[ind]))
+
+            intercept.append(-0.5 * (np.dot(temp2, meang) +
+                                     np.linalg.slogdet(covg)[1]) +
+                             np.log(self.priors_[ind]))
             linear_coef.append(temp2)
             quad_coef.append(-0.5 * temp1)
-            ###            
-#            invcovg = np.linalg.inv(covg)         
+            ###
+#            invcovg = np.linalg.inv(covg)
 #            quadcoefg = -0.5 * invcovg
 #            linearcoefg = np.dot(meang, invcovg)
-#            interceptg = -0.5 * (np.linalg.slogdet(covg)[1] + np.dot(meang, np.dot(invcovg,meang))) + np.log(self.priors_[ind])
-            
+#            interceptg = -0.5 * (np.linalg.slogdet(covg)[1] + \
+#                                 np.dot(meang, np.dot(invcovg,meang))) + \
+#                                 np.log(self.priors_[ind])
+
             means.append(meang)
             cov.append(covg)
-            #quad_coef.append(quadcoefg)
-            #linear_coef.append(linearcoefg)
-            #intercept.append(interceptg)
-        
+            # quad_coef.append(quadcoefg)
+            # linear_coef.append(linearcoefg)
+            # intercept.append(interceptg)
+
         self.means_ = np.asarray(means)
         self.covariances_ = np.asarray(cov)
         self.quad_coef_ = np.asarray(quad_coef)
@@ -716,7 +730,17 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
         X = check_array(X)
         norm2 = []
         for i in range(len(self.classes_)):
-            norm2.append(self.intercept_[i] + np.dot(self.linear_coef_[i], X.T) + np.diag(np.dot(X, np.dot(self.quad_coef_[i], X.T))))
+            norm2.append(
+                self.intercept_[i] +
+                np.dot(
+                    self.linear_coef_[i],
+                    X.T) +
+                np.diag(
+                    np.dot(
+                        X,
+                        np.dot(
+                            self.quad_coef_[i],
+                            X.T))))
         norm2 = np.array(norm2).T   # shape = [len(X), n_classes]
         return norm2
 
@@ -777,7 +801,6 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
         likelihood = np.exp(values - values.max(axis=1)[:, np.newaxis])
         # compute posterior probabilities
         return likelihood / likelihood.sum(axis=1)[:, np.newaxis]
-
 
     def predict_log_proba(self, X):
         """Return posterior probabilities of classification.
