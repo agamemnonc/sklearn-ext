@@ -11,6 +11,9 @@ from sklearn.utils import check_consistent_length
 from sklearn.utils import column_or_1d
 
 
+__all__ = ['multiclass_multioutput']
+
+
 def _check_targets(y_true, y_pred):
     """Check that y_true and y_pred belong to the same classification task
     This converts multiclass or binary types to a common shape, and raises a
