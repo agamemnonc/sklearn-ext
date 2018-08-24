@@ -20,7 +20,7 @@ from sklearn.externals.six.moves import xrange
 
 from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
 from sklearn.linear_model.base import LinearClassifierMixin
-from sklearn.covariance import ledoit_wolf, empirical_covariance,
+from sklearn.covariance import ledoit_wolf, empirical_covariance
 from sklearn.covariance import shrunk_covariance
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils import check_array, check_X_y
