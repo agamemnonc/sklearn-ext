@@ -27,7 +27,7 @@ def test_rda():
             lda_clf.predict_proba(X),
             rda_clf.predict_proba(X))
 
-        # 2. LDA/QDA
+        # 2. RDA/QDA
         qda_clf = QuadraticDiscriminantAnalysis()
         rda_clf = RegularizedDiscriminantAnalysis(
             reg_param_alpha=1., reg_param_gamma=0.)
@@ -39,7 +39,7 @@ def test_rda():
             qda_clf.predict_proba(X),
             rda_clf.predict_proba(X))
 
-        # 3. QDA/GNB
+        # 3. RDA/GNB
         gnb_clf = GaussianNB()
         rda_clf = RegularizedDiscriminantAnalysis(
             reg_param_alpha=1., reg_param_gamma=1.)
