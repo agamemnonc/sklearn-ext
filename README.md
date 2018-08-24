@@ -1,6 +1,6 @@
 # sklearn-ext
 
-Machine learning extensions for scikit-learn
+A collection of machine learning extensions for scikit-learn. Mainly for personal use.
 
 ## Dependencies
 * [numpy](http://www.numpy.org/) >= 1.10.4
