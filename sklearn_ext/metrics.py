@@ -3,14 +3,10 @@ from __future__ import division
 import warnings
 import numpy as np
 
-from scipy.sparse import csr_matrix
-
 from sklearn import metrics
 from sklearn.utils.multiclass import type_of_target
-from sklearn.utils.multiclass import unique_labels
 from sklearn.utils import check_consistent_length
 from sklearn.utils import column_or_1d
-from sklearn.utils.sparsefuncs import count_nonzero
 from sklearn.utils.validation import _num_samples
 
 
@@ -37,7 +33,8 @@ def _check_targets(y_true, y_pred):
     y_pred : array-like
     Returns
     -------
-    type_true : one of {'multilabel-indicator', 'multiclass', 'binary'}
+    type_true : one of {'multilabel-indicator', 'multiclass', 'binary',
+                        multiclass-multioutput}
         The type of the true target data, as output by
         ``utils.multiclass.type_of_target``
     y_true : array or indicator matrix
@@ -58,7 +55,6 @@ def _check_targets(y_true, y_pred):
     # We can't have more than one value on y_type => The set is no more needed
     y_type = y_type.pop()
 
-    # No metrics support "multiclass-multioutput" format
     if (y_type not in ["binary", "multiclass", "multilabel-indicator",
                        "multiclass-multioutput"]):
         raise ValueError("{0} is not supported".format(y_type))
@@ -72,8 +68,6 @@ def _check_targets(y_true, y_pred):
                 y_type = "multiclass"
 
     if y_type.startswith('multilabel'):
-        y_true = csr_matrix(y_true)
-        y_pred = csr_matrix(y_pred)
         y_type = 'multilabel-indicator'
 
     return y_type, y_true, y_pred
@@ -205,7 +199,8 @@ def zero_one_loss(y_true, y_pred, normalize=True, sample_weight=None):
             n_samples = _num_samples(y_true)
         return n_samples - score
 
-def hamming_score(y_true, y_pred, labels=None, sample_weight=None):
+
+def hamming_score(y_true, y_pred, normalize=True, sample_weight=None):
     """Hamming classification score.
     In multilabel classification, this function computes label-based accuracy.
     Read more in the :ref:`User Guide <accuracy_score>`.
@@ -250,13 +245,14 @@ def hamming_score(y_true, y_pred, labels=None, sample_weight=None):
     >>> hamming_score(np.array([[0, 1], [1, 1]]), np.ones((2, 2)))
     0.75
     """
-    loss = hamming_loss(y_true, y_pred,
-                           labels=labels,
-                           sample_weight=sample_weight)
-    return 1 - loss
+
+    y_type, y_true, y_pred = _check_targets(y_true, y_pred)
+    check_consistent_length(y_true, y_pred, sample_weight)
+    score = y_true == y_pred
+    return _weighted_sum(score, sample_weight, normalize)
 
 
-def hamming_loss(y_true, y_pred, labels=None, sample_weight=None):
+def hamming_loss(y_true, y_pred, normalize=True, sample_weight=None):
     """Compute the average Hamming loss.
     The Hamming loss is the fraction of labels that are incorrectly predicted.
     Read more in the :ref:`User Guide <hamming_loss>`.
@@ -312,30 +308,18 @@ def hamming_loss(y_true, y_pred, labels=None, sample_weight=None):
     0.75
     """
 
-    y_type, y_true, y_pred = _check_targets(y_true, y_pred)
-    check_consistent_length(y_true, y_pred, sample_weight)
+    score = hamming_score(y_true, y_pred,
+                          normalize=normalize,
+                          sample_weight=sample_weight)
 
-    if sample_weight is None:
-        weight_average = 1.
+    if normalize:
+        return 1 - score
     else:
-        weight_average = np.mean(sample_weight)
-
-    if y_type.startswith('multilabel'):
-
-        if labels is None:
-            labels = unique_labels(y_true, y_pred)
+        if sample_weight is not None:
+            n_samples = np.sum(sample_weight)
         else:
-            labels = np.asarray(labels)
-
-        n_differences = count_nonzero(y_true - y_pred,
-                                      sample_weight=sample_weight)
-        return (n_differences /
-                (y_true.shape[0] * len(labels) * weight_average))
-
-    elif y_type in ["binary", "multiclass", "multiclass-multioutput"]:
-        return _weighted_sum(y_true != y_pred, sample_weight, normalize=True)
-    else:
-        raise ValueError("{0} is not supported".format(y_type))
+            n_samples = _num_samples(y_true)
+        return n_samples - score
 
 
 def multiclass_multioutput(metric, y_true, y_pred, normalize=True,
