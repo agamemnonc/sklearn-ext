@@ -52,8 +52,8 @@ class RocThreshold(object):
         Area under the curve metric for each class.
     theta_opt_ : array of shape (n_class,)
         Optimal thresholds for each class estimated with selected strategy.
-    
-    
+
+
     """
 
     def __init__(self,
@@ -130,24 +130,12 @@ class RocThreshold(object):
     def _compute_thresholds_fpr_limit(self):
         for i, class_ in enumerate(self.classes_):
             turning_point = np.where(self.fpr_[i] > self.fpr_threshold)[0][0]
-            class_threshold = self.thresholds_[i][turning_point]
-
-            if self.max_threshold is not None:
-                if class_threshold < self.max_threshold:
-                    self.theta_opt_[i] = class_threshold
-                else:
-                    self.theta_opt_[i] = self.max_threshold
+            self.theta_opt_[i] = self.thresholds_[i][turning_point]
 
     def _compute_thresholds_tpr_limit(self):
         for i, class_ in enumerate(self.classes_):
             turning_point = np.where(self.tpr_[i] < self.tpr_min)[0][0]
-            class_threshold = self.thresholds_[i][turning_point]
-
-            if self.min_threshold is not None:
-                if class_threshold > self.min_threshold:
-                    self.optimal_threshold_[i] = class_threshold
-                else:
-                    self.optimal_threshold_[i] = self.min_threshold
+            self.theta_opt_[i] = self.thresholds_[i][turning_point]
 
     def _check_thresholds_limits(self):
         if self.min_threshold is not None:
