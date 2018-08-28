@@ -2,7 +2,7 @@
 
 A collection of machine learning extensions using the scikit-learn API. 
 
-Mainly for personal use.
+Mainly intended for personal use.
 
 ## Dependencies
 * [numpy](http://www.numpy.org/) >= 1.10.4
