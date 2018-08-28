@@ -16,7 +16,7 @@ class RocThreshold(object):
         * "max_random": maximizes distance from random classifier (i.e.
         distance from line x=y).
         * "min_perfect": minimizes distance from perfect classifier (i.e.
-        point (0,1).
+        distance from point (0,1).
         * "fpr_limit": chooses the threshold that maximizes the true positive
         rate (TPR), subject to false positive rate (FPR) < fpr_limit.
         * "tpr_limit": chooses the threshold that minimizes the false positive
@@ -24,18 +24,36 @@ class RocThreshold(object):
     drop_intermediate : boolean, optional (default=True)
         Whether to drop some suboptimal thresholds when computing ROC curve
         metrics.
-    fpr_max : float or array of shape [n_classes], optional (default=None)
+    fpr_max : float or array of shape (n_class,), optional (default=None)
         False positive rate max limit when using "fpr_limit" strategy.
-    tpr_min : float or array of shape [n_classes], optional (default=None)
+    tpr_min : float or array of shape (n_class,), optional (default=None)
         True positive rate min limit when using "tpr_limit" strategy.
-    theta_max : float or array of shape [n_classes], optional (default=None)
+    theta_max : float or array of shape (n_class,), optional (default=None)
         Maximum allowed threshold(s).
-    theta_min : float or array of shape [n_classes], optional (default=None)
+    theta_min : float or array of shape (n_class,), optional (default=None)
         Minimum allowed threshold(s).
 
 
     Attributes
     ----------
+    classes_ : array of shape (n_class,)
+        Holds the label for each class.
+    fpr_ : array, shape (n_thresholds,)
+        Increasing false positive rates such that element i is the false
+        positive rate of predictions with score >= thresholds[i].
+    tpr_ : array, shape (n_thresholds,)
+        Increasing true positive rates such that element i is the true
+        positive rate of predictions with score >= thresholds[i].
+    thresholds_ : array of shape (n_thresholds,)
+        Decreasing thresholds on the decision function used to compute
+        fpr and tpr. `thresholds[0]` represents no instances being predicted
+        and is arbitrarily set to `max(y_score) + 1`.
+    auc_ : array of shape(n_class,)
+        Area under the curve metric for each class.
+    theta_opt_ : array of shape (n_class,)
+        Optimal thresholds for each class estimated with selected strategy.
+    
+    
     """
 
     def __init__(self,
@@ -55,8 +73,8 @@ class RocThreshold(object):
         self.thresholds_ = dict()
         self.tpr_ = dict()
         self.fpr_ = dict()
-        self.roc_auc_ = dict()
-        self.optimal_threshold_ = dict()
+        self.auc_ = dict()
+        self.theta_opt_ = dict()
 
     def fit(self, y_true, y_pred):
         """ Compute class-specific TPR, FPR and find optimal ROC thresholds.
@@ -82,7 +100,7 @@ class RocThreshold(object):
                 roc_curve(y_onevsall,
                           y_pred_onevsall,
                           drop_intermediate=self.drop_intermediate)
-            self.roc_auc_[i] = auc(self.fpr_[i], self.tpr_[i])
+            self.auc_[i] = auc(self.fpr_[i], self.tpr_[i])
 
         if self.strategy == 'max_random':
             self._compute_thresholds_max_random()
@@ -101,12 +119,12 @@ class RocThreshold(object):
     def _compute_thresholds_max_random(self):
         for i, class_ in enumerate(self.classes_):
             rnd_clf_tpr = np.linspace(0, 1, self.thresholds_[i].size)
-            self.optimal_threshold_[i] = self.thresholds_[
+            self.theta_opt_[i] = self.thresholds_[
                 i][np.argmax(self.tpr_[i] - rnd_clf_tpr)]
 
     def _compute_thresholds_min_perfect(self):
         for i, class_ in enumerate(self.classes_):
-            self.optimal_threshold_[i] = self.thresholds_[i][np.argmin(
+            self.theta_opt_[i] = self.thresholds_[i][np.argmin(
                 np.sqrt((self.tpr_[i] - 1)**2 + (self.fpr_[i] - 0)**2))]
 
     def _compute_thresholds_fpr_limit(self):
@@ -116,9 +134,9 @@ class RocThreshold(object):
 
             if self.max_threshold is not None:
                 if class_threshold < self.max_threshold:
-                    self.optimal_threshold_[i] = class_threshold
+                    self.theta_opt_[i] = class_threshold
                 else:
-                    self.optimal_threshold_[i] = self.max_threshold
+                    self.theta_opt_[i] = self.max_threshold
 
     def _compute_thresholds_tpr_limit(self):
         for i, class_ in enumerate(self.classes_):
@@ -139,8 +157,8 @@ class RocThreshold(object):
                 min_thresholds = [self.min_threshold] * len(self.classes_)
 
             for i, class_ in enumerate(self.classes_):
-                if self.optimal_threshold_[i] < min_thresholds[i]:
-                    self.optimal_threshold_[i] = min_thresholds[i]
+                if self.theta_opt_[i] < min_thresholds[i]:
+                    self.theta_opt_[i] = min_thresholds[i]
 
         if self.max_threshold is not None:
             if isinstance(self.max_threshold, (list, tuple, np.ndarray)):
@@ -149,5 +167,5 @@ class RocThreshold(object):
                 max_thresholds = [self.max_threshold] * len(self.classes_)
 
             for i, class_ in enumerate(self.classes_):
-                if self.optimal_threshold_[i] > max_thresholds[i]:
-                    self.optimal_threshold_[i] = max_thresholds[i]
+                if self.theta_opt_[i] > max_thresholds[i]:
+                    self.theta_opt_[i] = max_thresholds[i]
