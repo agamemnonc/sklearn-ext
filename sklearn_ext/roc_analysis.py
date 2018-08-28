@@ -2,6 +2,10 @@ import numpy as np
 
 from sklearn.metrics import roc_curve, auc
 
+__all__ = [
+    'RocThreshold'
+]
+
 
 class RocThreshold(object):
     """Choose optimal class-specific thresholds by using ROC analysis.
@@ -48,7 +52,7 @@ class RocThreshold(object):
         Decreasing thresholds on the decision function used to compute
         fpr and tpr. `thresholds[0]` represents no instances being predicted
         and is arbitrarily set to `max(y_score) + 1`.
-    auc_ : array of shape(n_class,)
+    roc_auc_ : array of shape(n_class,)
         Area under the curve metric for each class.
     theta_opt_ : array of shape (n_class,)
         Optimal thresholds for each class estimated with selected strategy.
@@ -73,7 +77,7 @@ class RocThreshold(object):
         self.thresholds_ = dict()
         self.tpr_ = dict()
         self.fpr_ = dict()
-        self.auc_ = dict()
+        self.roc_auc_ = dict()
         self.theta_opt_ = dict()
 
     def fit(self, y_true, y_pred):
@@ -91,25 +95,33 @@ class RocThreshold(object):
         self.classes_ = np.unique(y_true)
         for i, class_ in enumerate(self.classes_):
             idx = np.where(y_true == class_)
-            # Convert to one-vs-all classifier
+            # Convert to one-vs-all classifier and estimate probabilities for
+            # the instances belonging to the class
             y_onevsall = np.zeros_like(y_true)
             y_onevsall[idx] = 1
-            # Estimated probabilities for the instances belonging to the class
             y_pred_onevsall = y_pred[:, i]
             self.fpr_[i], self.tpr_[i], self.thresholds_[i] = \
                 roc_curve(y_onevsall,
                           y_pred_onevsall,
                           drop_intermediate=self.drop_intermediate)
-            self.auc_[i] = auc(self.fpr_[i], self.tpr_[i])
+            self.roc_auc_[i] = auc(self.fpr_[i], self.tpr_[i])
 
         if self.strategy == 'max_random':
             self._compute_thresholds_max_random()
         elif self.strategy == 'min_perfect':
             self._compute_thresholds_min_perfect()
-        elif self.strategy == 'fpr_limit':
-            self._compute_thresholds_fpr_limit()
-        elif self.strategy == 'tpr_limit':
-            self.compute_thresholds_tpr_limit()
+        elif self.strategy == 'fpr_max':
+            if self.fpr_max is None:
+                raise ValueError("fpr_max strategy requires the fpr_max "
+                                 "argument to be set.")
+            else:
+                self._compute_thresholds_fpr_max()
+        elif self.strategy == 'tpr_min':
+            if self.tpr_min is None:
+                raise ValueError("fpr_max strategy requires the fpr_max "
+                                 "argument to be set.")
+            else:
+                self._compute_thresholds_tpr_min()
         else:
             raise ValueError("Unrecognized strategy for computing thresholds: "
                              "{}.".format(self.strategy))
@@ -127,32 +139,42 @@ class RocThreshold(object):
             self.theta_opt_[i] = self.thresholds_[i][np.argmin(
                 np.sqrt((self.tpr_[i] - 1)**2 + (self.fpr_[i] - 0)**2))]
 
-    def _compute_thresholds_fpr_limit(self):
-        for i, class_ in enumerate(self.classes_):
-            turning_point = np.where(self.fpr_[i] > self.fpr_threshold)[0][0]
-            self.theta_opt_[i] = self.thresholds_[i][turning_point]
+    def _compute_thresholds_fpr_max(self):
+        if isinstance(self.fpr_max, (list, tuple, np.ndarray)):
+            fpr_max = self.fpr_max
+        else:
+            fpr_max = [self.fpr_max] * len(self.classes_)
 
-    def _compute_thresholds_tpr_limit(self):
         for i, class_ in enumerate(self.classes_):
-            turning_point = np.where(self.tpr_[i] < self.tpr_min)[0][0]
+            turning_point = np.where(self.fpr_[i] > fpr_max[i])[0][0]
+            self.theta_opt_[i] = self.thresholds_[i][turning_point - 1]
+
+    def _compute_thresholds_tpr_min(self):
+        if isinstance(self.tpr_min, (list, tuple, np.ndarray)):
+            tpr_min = self.tpr_min
+        else:
+            tpr_min = [self.tpr_min] * len(self.classes_)
+
+        for i, class_ in enumerate(self.classes_):
+            turning_point = np.where(self.tpr_[i] > tpr_min[i])[0][0]
             self.theta_opt_[i] = self.thresholds_[i][turning_point]
 
     def _check_thresholds_limits(self):
-        if self.min_threshold is not None:
-            if isinstance(self.min_threshold, (list, tuple, np.ndarray)):
-                min_thresholds = self.min_threshold
+        if self.theta_min is not None:
+            if isinstance(self.theta_min, (list, tuple, np.ndarray)):
+                min_thresholds = self.theta_min
             else:
-                min_thresholds = [self.min_threshold] * len(self.classes_)
+                min_thresholds = [self.theta_min] * len(self.classes_)
 
             for i, class_ in enumerate(self.classes_):
                 if self.theta_opt_[i] < min_thresholds[i]:
                     self.theta_opt_[i] = min_thresholds[i]
 
-        if self.max_threshold is not None:
-            if isinstance(self.max_threshold, (list, tuple, np.ndarray)):
-                max_thresholds = self.max_threshold
+        if self.theta_max is not None:
+            if isinstance(self.theta_max, (list, tuple, np.ndarray)):
+                max_thresholds = self.theta_max
             else:
-                max_thresholds = [self.max_threshold] * len(self.classes_)
+                max_thresholds = [self.theta_max] * len(self.classes_)
 
             for i, class_ in enumerate(self.classes_):
                 if self.theta_opt_[i] > max_thresholds[i]:
