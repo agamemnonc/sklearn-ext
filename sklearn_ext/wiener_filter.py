@@ -136,14 +136,14 @@ class WienerFilter(object):
 
         return self
 
-    def predict(self, X, batch=False):
+    def predict(self, X, batch=True):
         """Predict using the linear model.
 
         Parameters
         ----------
         X : array-like, shape = (n_samples, n_features) or (n_lags, n_features)
             The input samples.
-        batch : boolean, optional, default False
+        batch : boolean, optional, default True
             If True, a batch prediction is made. Otherwise, a single prediction
             is made. In the latter case, data in X should be in augmented form,
             i.e., the shape of X should be (n_lags, n_features), where the most
@@ -168,15 +168,10 @@ class WienerFilter(object):
             for ii in range(n_outputs):
                 for jj in range(n_features):
                     coef = self.coef_[
-                        jj *
-                        self.n_lags:(
-                            jj +
-                            1) *
-                        self.n_lags,
-                        ii]
+                        jj * self.n_lags:(jj + 1) * self.n_lags, ii]
                     y[:, ii] += lfilter(coef, 1, X[:, jj], axis=-1)
-
             y = y[self.n_lags - 1:, :]
+
         return y + self.intercept_
 
     def score(self, X, y, sample_weight=None, multioutput='uniform_average'):
