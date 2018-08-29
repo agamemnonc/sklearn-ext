@@ -8,6 +8,7 @@ from sklearn.utils.validation import check_array, check_is_fitted
 from sklearn.utils import check_X_y
 from sklearn.metrics import r2_score
 
+
 __all__ = ['WienerFilter']
 
 
