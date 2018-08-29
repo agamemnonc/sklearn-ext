@@ -8,13 +8,42 @@ from sklearn.utils.validation import check_array, check_is_fitted
 from sklearn.utils import check_X_y
 from sklearn.metrics import r2_score
 
+__all__ = ['WienerFilter']
+
+
+def _covf(X, M):
+    """Estimate time-series covariance functions.
+
+    Parameters
+    ----------
+    X: array-like, shape = (n_samples, n_features)
+        Data from which to compute the covariance estimate
+    M : int
+        The maximum delay - 1, for which the covariance function is
+        estimated
+
+    Returns
+    -------
+    covariance : array, shape = (n_features ** 2, M)
+        Covariance matrix
+    """
+
+    n_samples, n_features = np.shape(X)
+    X = np.vstack((X, np.zeros((M, n_features))))
+    rows = np.arange(n_samples)
+    covariance = np.zeros((n_features**2, M), dtype=float)
+    for jj in range(M):
+        a = np.dot(np.transpose(X[rows, :]), X[rows + jj, :])
+        covariance[:, jj] = (np.conj(a) / n_samples).reshape(
+            (n_features**2), order='F')
+    return covariance
+
 
 class WienerFilter(object):
     """Wiener Filter regression.
 
     Parameters
     ----------
-
     reg_lambda : float
         Regularization constant
     n_lags : int
@@ -22,66 +51,63 @@ class WienerFilter(object):
 
     Attributes
     ----------
-
-    n_features : int
-        Number of features
-    n_outputs : int
-        Number of outputs
     coef_ : array-like, shape (n_features*n_lags, n_outputs)
         Coefficient matrix
     intercept_ : array, shape (n_outputs)
         Independent term in the linear model.
     """
 
-    def __init__(self, n_features, n_outputs, reg_lambda=1e-4, n_lags=1):
+    def __init__(self, reg_lambda=1e-4, n_lags=1):
         self.reg_lambda = reg_lambda
         self.n_lags = n_lags
 
-    def _covf(self, x, M):
-        n_sam, n_dim = np.shape(x)
-        x = np.vstack((x, np.zeros((M, n_dim))))
-        rows = np.arange(n_sam)
-        R = np.zeros((n_dim**2, M), dtype=float)
-        for jj in range(M):
-            a = np.dot(np.transpose(x[rows, :]), x[rows + jj, :])
-            R[:, jj] = (np.conj(a) / n_sam).reshape((n_dim**2), order='F')
-        return R
-
     def fit(self, X, y):
+        """
+        Fit linear model.
+
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Training data
+        y : array-like, shape = (n_samples, n_outputs)
+            Target values
+
+        Returns
+        -------
+        self : returns an instance of self.
+        """
+
         X, y = check_X_y(X, y, accept_sparse=False,
                          y_numeric=True, multi_output=True)
-        self.n_features_ = X.shape[1]
-        self.n_outputs_ = y.shape[1]
+        n_features_ = X.shape[1]
+        n_outputs_ = y.shape[1]
         output_mean = np.mean(y, axis=0)
         y = np.subtract(y, output_mean)
-        numio = self.n_features + self.n_outputs_
-        R = self._covf(np.hstack((X, y)), self.n_lags)
+        numio = n_features_ + n_outputs_
+        R = _covf(np.hstack((X, y)), self.n_lags)
         PHI = np.empty((2 * self.n_lags - 1, numio**2), dtype=float, order='C')
         for ii in range(numio):
             for jj in range(numio):
                 PHI[:, ii +
                     jj *
-                    numio] = np.hstack((R[jj +
-                                          ii *
-                                          numio, np.arange(self.n_lags -
-                                                           1, 0, -
-                                                           1)], R[ii +
-                                                                  jj *
-                                                                  numio, :]))
+                    numio] = np.hstack((
+                        R[jj + ii * numio,
+                          np.arange(self.n_lags - 1, 0, -1)],
+                        R[ii + jj * numio, :]))
 
         Nxxr = np.arange(self.n_lags - 1, 2 * (self.n_lags - 1) + 1, 1)
         Nxxc = np.arange(self.n_lags - 1, -1, -1)
         Nxy = np.arange(self.n_lags - 1, 2 * (self.n_lags - 1) + 1)
         # Solve matrix equations to identify filters
         PX = np.empty(
-            (self.n_features_ *
+            (n_features_ *
              self.n_lags,
-             self.n_features_ *
+             n_features_ *
              self.n_lags),
             dtype=float,
             order='C')
-        for ii in range(self.n_features_):
-            for jj in range(self.n_features_):
+        for ii in range(n_features_):
+            for jj in range(n_features_):
                 c_start = ii * self.n_lags
                 c_end = (ii + 1) * self.n_lags
                 r_start = jj * self.n_lags
@@ -90,38 +116,56 @@ class WienerFilter(object):
                     PHI[Nxxc, ii + (jj) * numio], PHI[Nxxr, ii + (jj) * numio])
 
         PXY = np.empty(
-            (self.n_features_ *
+            (n_features_ *
              self.n_lags,
-             self.n_outputs_),
+             n_outputs_),
             dtype=float,
             order='C')
-        for ii in range(self.n_features_):
-            for jj in range(self.n_features_,
-                            self.n_features_ + self.n_outputs_, 1):
+        for ii in range(n_features_):
+            for jj in range(n_features_,
+                            n_features_ + n_outputs_, 1):
                 r_start = ii * self.n_lags
                 r_end = (ii + 1) * self.n_lags
-                c_ind = jj - self.n_features_
+                c_ind = jj - n_features_
                 PXY[r_start:r_end, c_ind] = PHI[Nxy, ii + (jj) * numio]
 
         self.coef_ = np.linalg.solve(
             (PX + self.reg_lambda * np.identity(PX.shape[0])), PXY)
         self.intercept_ = output_mean
 
+        return self
+
     def predict(self, X, batch=False):
+        """Predict using the linear model.
+
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features) or (n_lags, n_features)
+            The input samples.
+        batch : boolean, optional, default False
+            If True, a batch prediction is made. Otherwise, a single prediction
+            is made. In the latter case, data in X should be in augmented form,
+            i.e., the shape of X should be (n_lags, n_features), where the most
+            recent observations are stored in the last row of the array.
+
+        Returns
+        -------
+        y : array, shape = (n_samples,n_outputs)
+            The predicted values.
         """
-        If batch is True, X.shape = (num_sam, n_features), if not
-        X.shape = (n_lags, n_features).
-        """
+
         X = check_array(X, accept_sparse=False)
         check_is_fitted(self, "coef_")
-        if batch is True:
+        n_features = X.shape[1]
+        n_outputs = self.intercept_.size
+        if batch is False:
             X_ud = np.flipud(X)
             y = np.dot(X_ud.reshape(-1, order='F'), self.coef_)
         else:
             n_samples = X.shape[0]
-            y = np.zeros((n_samples, self.n_outputs_))
-            for ii in range(self.n_outputs_):
-                for jj in range(self.n_features_):
+            y = np.zeros((n_samples, n_outputs))
+            for ii in range(n_outputs):
+                for jj in range(n_features):
                     coef = self.coef_[
                         jj *
                         self.n_lags:(
@@ -134,6 +178,41 @@ class WienerFilter(object):
             y = y[self.n_lags - 1:, :]
         return y + self.intercept_
 
-    def score(self, X, y, batch=False, multioutput='uniform_average'):
-        self.vaf = r2_score(y[self.n_lags - 1:, :],
-                            self.predict(X), multioutput)
+    def score(self, X, y, sample_weight=None, multioutput='uniform_average'):
+        """Returns the coefficient of determination R^2 of the prediction.
+
+        The coefficient R^2 is defined as (1 - u/v), where u is the residual
+        sum of squares ((y_true - y_pred) ** 2).sum() and v is the total
+        sum of squares ((y_true - y_true.mean()) ** 2).sum().
+        The best possible score is 1.0 and it can be negative (because the
+        model can be arbitrarily worse). A constant model that always
+        predicts the expected value of y, disregarding the input features,
+        would get a R^2 score of 0.0.
+
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Test samples.
+
+        y : array-like, shape = (n_samples) or (n_samples, n_outputs)
+            True values for X.
+
+        sample_weight : array-like, shape = [n_samples], optional
+            Sample weights.
+
+        Returns
+        -------
+        score : float
+            R^2 of self.predict(X) wrt. y.
+
+        Notes
+        -----
+        This method can only be used for batch prediction, since R^2 does not
+        make sense for a single prediction.
+        """
+
+        return r2_score(
+            y[self.n_lags - 1:, :],
+            self.predict(X, batch=True),
+            sample_weight=sample_weight,
+            multioutput=multioutput)
