@@ -5,8 +5,7 @@ import numpy as np
 
 from sklearn import metrics
 from sklearn.utils.multiclass import type_of_target
-from sklearn.utils import check_consistent_length
-from sklearn.utils import column_or_1d
+from sklearn.utils import check_array, check_consistent_length, column_or_1d
 from sklearn.utils.validation import _num_samples
 
 
@@ -396,15 +395,20 @@ def multiclass_multioutput(metric, y_true, y_pred, normalize=True,
         raise ValueError("{} score not supported.".format(metric))
 
     score_function = getattr(metrics, metric)
-    y_type, y_true, y_pred = _check_targets(y_true, y_pred)
-    if y_true.ndim == 1:
-        msg = ("Targets are 1-D. Assuming multioutput targets and a single "
-               "sample.")
-        warnings.warn(msg)
-        y_true = np.reshape(y_true, (1, -1))
-        y_pred = np.reshape(y_pred, (1, -1))
+    if metric is 'log_loss':
+        for y_output in y_pred:
+            y_output = check_array(y_output, ensure_2d=False)
+    else:
+        y_type, y_true, y_pred = _check_targets(y_true, y_pred) 
+        if y_true.ndim == 1:
+            msg = ("Targets are 1-D. Assuming multioutput targets and a single "
+                   "sample.")
+            warnings.warn(msg)
+            y_true = np.reshape(y_true, (1, -1))
+            y_pred = np.reshape(y_pred, (1, -1))
 
     num_samples, num_outputs = y_true.shape
+        
     if output_weight is not None and len(output_weight) is not num_outputs:
         raise ValueError("""The length of the weight vector must equal the
                          number of outputs.""")
@@ -412,13 +416,20 @@ def multiclass_multioutput(metric, y_true, y_pred, normalize=True,
     scores = np.zeros((num_outputs,))
     for output in range(num_outputs):
         if score_function in [metrics.accuracy_score, metrics.zero_one_loss,
-                              metrics.log_loss,
                               metrics.jaccard_similarity_score]:
             scores[output] = score_function(
                 y_true=y_true[:, output].reshape(num_samples, -1),
                 y_pred=y_pred[:, output].reshape(num_samples, -1),
                 normalize=normalize, sample_weight=sample_weight)
 
+        # predict_proba returns a list with n_outputs elements where each
+        # element is an array of shape (n_samples, n_classes)
+        if score_function is metrics.log_loss:
+            scores[output] = score_function(
+                y_true=y_true[:, output].reshape(num_samples, -1),
+                y_pred=y_pred[output],
+                normalize=normalize, sample_weight=sample_weight)
+            
         # hamming_loss does not support normalize as of version 0.19
         if score_function is metrics.hamming_loss:
             scores[output] = score_function(
