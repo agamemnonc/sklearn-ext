@@ -388,6 +388,12 @@ def multiclass_multioutput(metric, y_true, y_pred, normalize=True,
         ``utils.multiclass.type_of_target``
     y_true : array or indicator matrix
     y_pred : array or indicator matrix
+    
+    Notes
+    -------
+    Other types of averaging (e.g. micro, variance_weighted) are currently not
+    supported as it is not clear whether these would make sense in a
+    multi-output scenario.
     """
     if metric not in ['accuracy_score', 'zero_one_loss', 'log_loss',
                       'hamming_loss', 'jaccard_similarity_score',
