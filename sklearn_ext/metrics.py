@@ -50,6 +50,9 @@ def _check_targets(y_true, y_pred):
     if y_type == set(["binary", "multiclass"]):
         y_type = set(["multiclass"])
 
+    if y_type == set(["multiclass-multioutput", "multilabel-indicator"]):
+        y_type = set(["multiclass-multioutput"])
+
     if len(y_type) > 1:
         raise ValueError("Classification metrics can't handle a mix of {0} "
                          "and {1} targets".format(type_true, type_pred))
@@ -483,8 +486,9 @@ def multiclass_multioutput(metric, y_true, y_pred, labels=None, normalize=True,
     else:
         y_type, y_true, y_pred = _check_targets(y_true, y_pred)
         if y_true.ndim == 1:
-            msg = ("Targets are 1-D. Assuming multioutput targets and a single "
-                   "sample.")
+            msg = (
+                "Targets are 1-D. Assuming multioutput targets and a single "
+                "sample.")
             warnings.warn(msg)
             y_true = np.reshape(y_true, (1, -1))
             y_pred = np.reshape(y_pred, (1, -1))
