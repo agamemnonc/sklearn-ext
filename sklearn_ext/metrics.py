@@ -1,12 +1,15 @@
 from __future__ import division
+from itertools import chain
 
 import warnings
 import numpy as np
 
 from sklearn import metrics
 from sklearn.utils.multiclass import type_of_target
+from sklearn.utils.multiclass import _unique_multiclass, _unique_indicator
 from sklearn.utils import check_array, check_consistent_length, column_or_1d
 from sklearn.utils.validation import _num_samples
+from sklearn.externals.six import string_types
 
 
 __all__ = [
@@ -81,6 +84,79 @@ def _weighted_sum(sample_score, weight, normalize=False):
         return np.dot(sample_score, weight)
     else:
         return sample_score.sum()
+
+
+_FN_UNIQUE_LABELS = {
+    'binary': _unique_multiclass,
+    'multiclass': _unique_multiclass,
+    'multiclass-multioutput': _unique_multiclass,
+    'multilabel-indicator': _unique_indicator,
+}
+
+
+def unique_labels(*ys):
+    """Extract an ordered array of unique labels
+
+    We don't allow:
+        - mix of multilabel and multiclass (single label) targets
+        - mix of label indicator matrix and anything else,
+          because there are no explicit labels)
+        - mix of label indicator matrices of different sizes
+        - mix of string and integer labels
+
+    At the moment, we also don't allow "multiclass-multioutput" input type.
+
+    Parameters
+    ----------
+    *ys : array-likes
+
+    Returns
+    -------
+    out : numpy array of shape [n_unique_labels]
+        An ordered array of unique labels.
+
+    Examples
+    --------
+    >>> from sklearn.utils.multiclass import unique_labels
+    >>> unique_labels([3, 5, 5, 5, 7, 7])
+    array([3, 5, 7])
+    >>> unique_labels([1, 2, 3, 4], [2, 2, 3, 4])
+    array([1, 2, 3, 4])
+    >>> unique_labels([1, 2, 10], [5, 11])
+    array([ 1,  2,  5, 10, 11])
+    """
+    if not ys:
+        raise ValueError('No argument has been passed.')
+    # Check that we don't mix label format
+
+    ys_types = set(type_of_target(x) for x in ys)
+    if ys_types == set(["binary", "multiclass"]):
+        ys_types = set(["multiclass"])
+
+    if len(ys_types) > 1:
+        raise ValueError("Mix type of y not allowed, got types %s" % ys_types)
+
+    label_type = ys_types.pop()
+
+    # Check consistency for the indicator format
+    if (label_type == "multilabel-indicator" and
+            len(set(check_array(y, ['csr', 'csc', 'coo']).shape[1]
+                    for y in ys)) > 1):
+        raise ValueError("Multi-label binary indicator input with "
+                         "different numbers of labels")
+
+    # Get the unique set of labels
+    _unique_labels = _FN_UNIQUE_LABELS.get(label_type, None)
+    if not _unique_labels:
+        raise ValueError("Unknown label type: %s" % repr(ys))
+
+    ys_labels = set(chain.from_iterable(_unique_labels(y) for y in ys))
+
+    # Check that we don't mix string type with number type
+    if (len(set(isinstance(label, string_types) for label in ys_labels)) > 1):
+        raise ValueError("Mix of label input types (string and number)")
+
+    return np.array(sorted(ys_labels))
 
 
 def accuracy_score(y_true, y_pred, normalize=True, sample_weight=None):
@@ -321,7 +397,7 @@ def hamming_loss(y_true, y_pred, normalize=True, sample_weight=None):
         return n_samples - score
 
 
-def multiclass_multioutput(metric, y_true, y_pred, normalize=True,
+def multiclass_multioutput(metric, y_true, y_pred, labels=None, normalize=True,
                            sample_weight=None, class_average='binary',
                            output_weight=None, output_normalize=True):
     """Extends classification metrics to support multiclass and multilabel
@@ -388,7 +464,7 @@ def multiclass_multioutput(metric, y_true, y_pred, normalize=True,
         ``utils.multiclass.type_of_target``
     y_true : array or indicator matrix
     y_pred : array or indicator matrix
-    
+
     Notes
     -------
     Other types of averaging (e.g. micro, variance_weighted) are currently not
@@ -405,7 +481,7 @@ def multiclass_multioutput(metric, y_true, y_pred, normalize=True,
         for y_output in y_pred:
             y_output = check_array(y_output, ensure_2d=False)
     else:
-        y_type, y_true, y_pred = _check_targets(y_true, y_pred) 
+        y_type, y_true, y_pred = _check_targets(y_true, y_pred)
         if y_true.ndim == 1:
             msg = ("Targets are 1-D. Assuming multioutput targets and a single "
                    "sample.")
@@ -413,42 +489,62 @@ def multiclass_multioutput(metric, y_true, y_pred, normalize=True,
             y_true = np.reshape(y_true, (1, -1))
             y_pred = np.reshape(y_pred, (1, -1))
 
-    num_samples, num_outputs = y_true.shape
-        
-    if output_weight is not None and len(output_weight) is not num_outputs:
+    n_samples, n_outputs = y_true.shape
+
+    if output_weight is not None and len(output_weight) is not n_outputs:
         raise ValueError("""The length of the weight vector must equal the
                          number of outputs.""")
 
-    scores = np.zeros((num_outputs,))
-    for output in range(num_outputs):
+    if class_average is None:
+        # infer the labels if they are not provided
+        present_labels = unique_labels(y_true, y_pred)
+        if labels is None:
+            labels = present_labels
+
+        n_labels = len(labels)
+        scores = np.zeros((n_outputs, n_labels))
+    else:
+        scores = np.zeros((n_outputs,))
+
+    for output in range(n_outputs):
         if score_function in [metrics.accuracy_score, metrics.zero_one_loss,
                               metrics.jaccard_similarity_score]:
             scores[output] = score_function(
-                y_true=y_true[:, output].reshape(num_samples, -1),
-                y_pred=y_pred[:, output].reshape(num_samples, -1),
+                y_true=y_true[:, output].reshape(n_samples, -1),
+                y_pred=y_pred[:, output].reshape(n_samples, -1),
                 normalize=normalize, sample_weight=sample_weight)
 
         # predict_proba returns a list with n_outputs elements where each
         # element is an array of shape (n_samples, n_classes)
         if score_function is metrics.log_loss:
             scores[output] = score_function(
-                y_true=y_true[:, output].reshape(num_samples, -1),
+                y_true=y_true[:, output].reshape(n_samples, -1),
                 y_pred=y_pred[output],
                 normalize=normalize, sample_weight=sample_weight)
-            
+
         # hamming_loss does not support normalize as of version 0.19
         if score_function is metrics.hamming_loss:
             scores[output] = score_function(
-                y_true=y_true[:, output].reshape(num_samples, -1),
-                y_pred=y_pred[:, output].reshape(num_samples, -1),
+                y_true=y_true[:, output].reshape(n_samples, -1),
+                y_pred=y_pred[:, output].reshape(n_samples, -1),
                 sample_weight=sample_weight)
 
         # the following metrics do not support multi-class out of the box
         # so averaging is needed
         elif score_function in [metrics.precision_score, metrics.recall_score,
                                 metrics.f1_score]:
+
             scores[output] = score_function(
-                y_true=y_true[:, output].reshape(num_samples, -1),
-                y_pred=y_pred[:, output].reshape(num_samples, -1),
-                average=class_average, sample_weight=sample_weight)
-    return _weighted_sum(scores, output_weight, output_normalize)
+                y_true=y_true[:, output].reshape(n_samples, -1),
+                y_pred=y_pred[:, output].reshape(n_samples, -1),
+                labels=labels, average=class_average, sample_weight=sample_weight)
+
+    if class_average is None:
+        # return one output-average for each label
+        avg_scores = np.zeros((n_labels,))
+        for i_label in range(n_labels):
+            avg_scores[i_label] = _weighted_sum(
+                scores[:, i_label], output_weight, output_normalize)
+        return avg_scores
+    else:
+        return _weighted_sum(scores, output_weight, output_normalize)
