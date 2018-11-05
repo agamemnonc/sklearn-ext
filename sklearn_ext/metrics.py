@@ -400,7 +400,7 @@ def hamming_loss(y_true, y_pred, normalize=True, sample_weight=None):
         return n_samples - score
 
 
-def multiclass_multioutput(metric, y_true, y_pred, labels=None, normalize=True,
+def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
                            sample_weight=None, class_average='binary',
                            output_weight=None, output_normalize=True):
     """Extends classification metrics to support multiclass and multilabel
@@ -420,12 +420,12 @@ def multiclass_multioutput(metric, y_true, y_pred, labels=None, normalize=True,
 
     Parameters
     ----------
+    y_true : array-like
+    y_pred : array-like
     metric : string
         One of {'accuracy_score', 'zero_one_loss', 'log_loss',
         'jaccard_similarity_score', 'precision_score', 'recall_score',
         'f1_score'}
-    y_true : array-like
-    y_pred : array-like
     normalize : bool, optional (default=True)
         If ``False``, return the number of correctly classified samples.
         Otherwise, return the fraction of correctly classified samples.
