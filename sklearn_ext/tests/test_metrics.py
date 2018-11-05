@@ -72,5 +72,5 @@ def test_log_loss():
         multiclass_multioutput(
             Y_true,
             clf.predict_proba(X_test)),
-            'log_loss',
+            metric='log_loss',
         0.6454764507804741)
