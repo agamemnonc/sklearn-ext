@@ -426,6 +426,14 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
         One of {'accuracy_score', 'zero_one_loss', 'log_loss',
         'jaccard_similarity_score', 'precision_score', 'recall_score',
         'f1_score'}
+    labels : list, optional
+        The set of labels to include when ``average != 'binary'``, and their
+        order if ``average is None``. Labels present in the data can be
+        excluded, for example to calculate a multiclass average ignoring a
+        majority negative class, while labels not present in the data will
+        result in 0 components in a macro average. For multilabel targets,
+        labels are column indices. By default, all labels in ``y_true`` and
+        ``y_pred`` are used in sorted order.
     normalize : bool, optional (default=True)
         If ``False``, return the number of correctly classified samples.
         Otherwise, return the fraction of correctly classified samples.
