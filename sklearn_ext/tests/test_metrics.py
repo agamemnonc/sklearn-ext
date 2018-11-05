@@ -70,7 +70,7 @@ def test_hamming_loss_score():
 def test_log_loss():
     assert_almost_equal(
         multiclass_multioutput(
-            'log_loss',
             Y_true,
             clf.predict_proba(X_test)),
+            'log_loss',
         0.6454764507804741)

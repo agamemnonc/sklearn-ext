@@ -524,7 +524,8 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
             scores[output] = score_function(
                 y_true=y_true[:, output].reshape(n_samples, -1),
                 y_pred=y_pred[:, output].reshape(n_samples, -1),
-                normalize=normalize, sample_weight=sample_weight)
+                normalize=normalize,
+                sample_weight=sample_weight)
 
         # predict_proba returns a list with n_outputs elements where each
         # element is an array of shape (n_samples, n_classes)
@@ -532,7 +533,8 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
             scores[output] = score_function(
                 y_true=y_true[:, output].reshape(n_samples, -1),
                 y_pred=y_pred[output],
-                normalize=normalize, sample_weight=sample_weight)
+                normalize=normalize,
+                sample_weight=sample_weight)
 
         # hamming_loss does not support normalize as of version 0.19
         if score_function is metrics.hamming_loss:
@@ -549,7 +551,9 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
             scores[output] = score_function(
                 y_true=y_true[:, output].reshape(n_samples, -1),
                 y_pred=y_pred[:, output].reshape(n_samples, -1),
-                labels=labels, average=class_average, sample_weight=sample_weight)
+                labels=labels,
+                average=class_average,
+                sample_weight=sample_weight)
 
     if class_average is None:
         # return one output-average for each label
