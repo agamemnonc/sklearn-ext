@@ -71,6 +71,6 @@ def test_log_loss():
     assert_almost_equal(
         multiclass_multioutput(
             Y_true,
-            clf.predict_proba(X_test)),
-            metric='log_loss',
+            clf.predict_proba(X_test),
+            metric='log_loss'),
         0.6454764507804741)
