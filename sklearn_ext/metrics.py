@@ -573,6 +573,7 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
             for i in range(n_labels):
                 avg_scores[i] = _weighted_sum(
                     scores[:, i], output_weight, output_normalize)
+                
             return avg_scores
         else:
             return _weighted_sum(scores, output_weight, output_normalize)
