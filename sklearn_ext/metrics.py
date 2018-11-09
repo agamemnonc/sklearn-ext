@@ -518,14 +518,11 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
             labels = present_labels
 
         n_labels = len(labels)
-        #scores = np.zeros((n_outputs, n_labels))
-    #else:
-        #scores = np.zeros((n_outputs,))
 
     scores = []
     for output in range(n_outputs):
-        if score_function in [metrics.accuracy_score, metrics.zero_one_loss,
-                              metrics.jaccard_similarity_score]:
+        if metric in ['accuracy_score', 'zero_one_loss',
+                      'jaccard_similarity_score']:
             scores.append(score_function(
                 y_true=y_true[:, output].reshape(n_samples, -1),
                 y_pred=y_pred[:, output].reshape(n_samples, -1),
@@ -533,8 +530,8 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
                 sample_weight=sample_weight))
 
         # predict_proba returns a list with n_outputs elements where each
-        # element is an array of shape (n_samples, n_classes)
-        if score_function is metrics.log_loss:
+        # element is an array of shape (n_samples, n_labels)
+        if metric is 'log_loss':
             scores.append(score_function(
                 y_true=y_true[:, output].reshape(n_samples, -1),
                 y_pred=y_pred[output],
@@ -542,7 +539,7 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
                 sample_weight=sample_weight))
 
         # hamming_loss does not support normalize as of version 0.19
-        if score_function is metrics.hamming_loss:
+        if metric is 'hamming_loss':
             scores.append(score_function(
                 y_true=y_true[:, output].reshape(n_samples, -1),
                 y_pred=y_pred[:, output].reshape(n_samples, -1),
@@ -550,8 +547,7 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
 
         # the following metrics do not support multi-class out of the box
         # so averaging is needed
-        if score_function in [metrics.precision_score, metrics.recall_score,
-                              metrics.f1_score]:
+        if metric in ['precision_score', 'recall_score', 'f1_score']:
             scores.append(score_function(
                 y_true=y_true[:, output].reshape(n_samples, -1),
                 y_pred=y_pred[:, output].reshape(n_samples, -1),
@@ -559,7 +555,7 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
                 average=class_average,
                 sample_weight=sample_weight))
         
-        if score_function is metrics.confusion_matrix:
+        if metric is 'confusion_matrix':
             scores.append(score_function(
                 y_true=y_true[:, output].reshape(n_samples, -1),
                 y_pred=y_pred[:, output].reshape(n_samples, -1),
@@ -567,12 +563,10 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
                 sample_weight=sample_weight))
 
     scores = np.array(scores)
-    if score_function in [metrics.accuracy_score, metrics.zero_one_loss,
-                          metrics.jaccard_similarity_score,
-                          metrics.hamming_loss, metrics.log_loss]:
+    if metric in ['accuracy_score', 'zero_one_loss',
+                  'jaccard_similarity_score', 'hamming_loss', 'log_loss']:
         return _weighted_sum(scores, output_weight, output_normalize)
-    elif score_function in [metrics.precision_score, metrics.recall_score,
-                              metrics.f1_score]:
+    elif metric in ['precision_score', 'recall_score', 'f1_score']:
         if class_average is None:
             # return one output-average for each label
             avg_scores = np.zeros((n_labels,))
@@ -582,7 +576,7 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
             return avg_scores
         else:
             return _weighted_sum(scores, output_weight, output_normalize)
-    elif score_function is metrics.confusion_matrix:
+    elif metric is 'confusion_matrix':
         avg_cm = np.zeros((n_labels, n_labels))
         for i in range(n_labels):
             for j in range(n_labels):
