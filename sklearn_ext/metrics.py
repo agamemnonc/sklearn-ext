@@ -493,14 +493,15 @@ def confusion_matrix(y_true, y_pred, normalize=False, labels=None,
     else:
         dtype = np.float64
 
-    CM = coo_matrix((sample_weight, (y_true, y_pred)),
+    cm = coo_matrix((sample_weight, (y_true, y_pred)),
                     shape=(n_labels, n_labels), dtype=dtype,
                     ).toarray()
 
     if normalize is True:
-        return CM / CM.sum(axis=1)[:, np.newaxis]
+        return cm / cm.sum(axis=1)[:, np.newaxis]
     else:
-        return CM    
+        return cm 
+
 def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
                            sample_weight=None, class_average='binary',
                            output_weight=None, output_normalize=True):
