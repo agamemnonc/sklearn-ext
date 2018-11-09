@@ -53,7 +53,7 @@ def test_hamming_score():
 
 def test_hamming_loss():
     assert_almost_equal(hamming_loss(Y1, Y2), 0.1)
-    assert_almost_equal(multiclass_multioutput('hamming_loss', Y1, Y2),
+    assert_almost_equal(multiclass_multioutput(Y1, Y2, 'hamming_loss'),
                         hamming_loss(Y1, Y2))
 
 
