@@ -18,7 +18,8 @@ __all__ = [
     'hamming_score',
     'zero_one_loss',
     'hamming_loss',
-    'multiclass_multioutput'
+    'multiclass_multioutput',
+    'confusion_matrix'
 ]
 
 
@@ -500,7 +501,7 @@ def confusion_matrix(y_true, y_pred, normalize=False, labels=None,
     if normalize is True:
         return cm / cm.sum(axis=1)[:, np.newaxis]
     else:
-        return cm 
+        return cm
 
 def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
                            sample_weight=None, class_average='binary',
@@ -519,8 +520,8 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
     For metrics not supporting multi-class out of the box, such as
     `precision_score`, `recall_score` and `f1_score`, a class-averaging
     strategy needs to be defined.
-    
-    A confusion matrix makes 
+
+    A confusion matrix makes
 
     Parameters
     ----------
@@ -540,8 +541,8 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
         ``y_pred`` are used in sorted order.
     normalize : bool, optional (default=True)
         If ``False``, return the number of correctly classified samples.
-        Otherwise, return the fraction of correctly classified samples. It 
-        applies only to 'accuracy_score', 'zero_one_loss', 'log_loss', 
+        Otherwise, return the fraction of correctly classified samples. It
+        applies only to 'accuracy_score', 'zero_one_loss', 'log_loss',
         and 'jaccardi_similarity_score'.
     sample_weight : array-like of shape = [n_samples], optional
         Sample weights.
@@ -613,10 +614,10 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
     if output_weight is not None and len(output_weight) is not n_outputs:
         raise ValueError("""The length of the weight vector must equal the
                          number of outputs.""")
-        
+
     # infer the labels if they are not provided
     if score_function in [metrics.precision_score, metrics.recall_score,
-                          metrics.f1_score, metrics.confusion_matrix]:   
+                          metrics.f1_score, metrics.confusion_matrix]:
         present_labels = unique_labels(y_true, y_pred)
         if labels is None:
             labels = present_labels
@@ -658,7 +659,7 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
                 labels=labels,
                 average=class_average,
                 sample_weight=sample_weight))
-        
+
         if metric is 'confusion_matrix':
             scores.append(score_function(
                 y_true=y_true[:, output].reshape(n_samples, -1),
@@ -677,7 +678,7 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
             for i in range(n_labels):
                 avg_scores[i] = _weighted_sum(
                     scores[:, i], output_weight, output_normalize)
-                
+
             return avg_scores
         else:
             return _weighted_sum(scores, output_weight, output_normalize)
@@ -687,5 +688,5 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
             for j in range(n_labels):
                 avg_cm[i, j] = _weighted_sum(
                         scores[:,i,j], output_weight, output_normalize)
-        
+
         return avg_cm
