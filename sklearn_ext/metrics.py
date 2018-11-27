@@ -417,9 +417,8 @@ def normalize_confusion_matrix(C):
     """
     return C / C.sum(axis=1)[:, np.newaxis]
 
-def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
-                           sample_weight=None, class_average='binary',
-                           output_weight=None, output_normalize=True):
+def multiclass_multioutput(metric, y_true, y_pred, output_normalize=True,
+                           output_weight=None, **kwargs):
     """Extends classification metrics to support multiclass and multilabel
 
     The metric is calculated for each output independently (i.e. the metric
@@ -439,68 +438,36 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
 
     Parameters
     ----------
-    y_true : array-like
-    y_pred : array-like
     metric : string
         One of {'accuracy_score', 'zero_one_loss', 'log_loss',
         'jaccard_similarity_score', 'precision_score', 'recall_score',
         'f1_score', 'confusion_matrix'}
-    labels : list, optional
-        The set of labels to include when ``average != 'binary'``, and their
-        order if ``average is None``. Labels present in the data can be
-        excluded, for example to calculate a multiclass average ignoring a
-        majority negative class, while labels not present in the data will
-        result in 0 components in a macro average. For multilabel targets,
-        labels are column indices. By default, all labels in ``y_true`` and
-        ``y_pred`` are used in sorted order.
-    normalize : bool, optional (default=True)
-        If ``False``, return the number of correctly classified samples.
-        Otherwise, return the fraction of correctly classified samples. It
-        applies only to 'accuracy_score', 'zero_one_loss', 'log_loss',
-        and 'jaccardi_similarity_score'.
-    sample_weight : array-like of shape = [n_samples], optional
-        Sample weights.
-    class_average : string, [None, 'binary' (default), 'micro', 'macro', \
-                             'samples', 'weighted']
-        This parameter is required for multiclass targets.
-        If ``None``, the scores for each class are returned. Otherwise, this
-        determines the type of averaging performed on the data:
-        ``'binary'``:
-            Only report results for the class specified by ``pos_label``.
-            This is applicable only if targets (``y_{true,pred}``) are binary.
-        ``'micro'``:
-            Calculate metrics globally by counting the total true positives,
-            false negatives and false positives.
-        ``'macro'``:
-            Calculate metrics for each label, and find their unweighted
-            mean.  This does not take label imbalance into account.
-        ``'weighted'``:
-            Calculate metrics for each label, and find their average weighted
-            by support (the number of true instances for each label). This
-            alters 'macro' to account for label imbalance; it can result in an
-            F-score that is not between precision and recall.
-        ``'samples'``:
-            Calculate metrics for each instance, and find their average (only
-            meaningful for multilabel classification where this differs from
-            :func:`accuracy_score`)
+
+    y_true : array-like
+        Ground truth (correct) labels.
+
+    y_pred : array-like
+        Predicted labels, as returned by a classifier.
+
     output_weight : array-like of shape = [n_outputs], optional
         Output weights.
+
     output_normalize : bool, optional (default=True)
         If ``False``, return the sum of the computed scores for each label.
         Otherwise, return their average.
 
+    **kwargs : additional arguments
+        Additional parameters to be passed to score function.
+
     Returns
     -------
-    type_true : one of {'multilabel-indicator', 'multiclass', 'binary'}
-        The type of the true target data, as output by
-        ``utils.multiclass.type_of_target``
-    y_true : array or indicator matrix
-    y_pred : array or indicator matrix
+    score : float or array of float, shape = [n_classes,]
+        Specified score.
 
     Notes
     -------
-    Other types of averaging (e.g. micro, variance_weighted) are currently not
-    supported as it is not clear whether these would make sense in a
+    Other types of averaging (e.g. micro, variance_weighted) are not currently
+    supported, since it is not clear how they would make sense in a
     multi-output scenario.
     """
     if metric not in ['accuracy_score', 'zero_one_loss', 'log_loss',
@@ -530,63 +497,31 @@ def multiclass_multioutput(y_true, y_pred, metric, labels=None, normalize=True,
                          number of outputs.""")
 
     # infer the labels if they are not provided
-    if score_function in [metrics.precision_score, metrics.recall_score,
-                          metrics.f1_score, metrics.confusion_matrix]:
+    if metric in ['precision_score', 'recall_score', 'f1_score',
+                  'confusion_matrix']:
         present_labels = unique_labels(y_true, y_pred)
-        if labels is None:
+        if 'labels' in kwargs:
+            labels = kwargs.get('labels')
+        else:
             labels = present_labels
-
         n_labels = len(labels)
 
     scores = []
     for output in range(n_outputs):
-        if metric in ['accuracy_score', 'zero_one_loss',
-                      'jaccard_similarity_score']:
-            scores.append(score_function(
-                y_true=y_true[:, output].reshape(n_samples, -1),
-                y_pred=y_pred[:, output].reshape(n_samples, -1),
-                normalize=normalize,
-                sample_weight=sample_weight))
-
-        # predict_proba returns a list with n_outputs elements where each
-        # element is an array of shape (n_samples, n_labels)
+        y_true_output = y_true[:, output].reshape(n_samples, -1)
         if metric is 'log_loss':
-            scores.append(score_function(
-                y_true=y_true[:, output].reshape(n_samples, -1),
-                y_pred=y_pred[output],
-                normalize=normalize,
-                sample_weight=sample_weight))
+            y_pred_output = y_pred[output]
+        else:
+            y_pred_output = y_pred[:, output].reshape(n_samples, -1)
 
-        # hamming_loss does not support normalize as of version 0.19
-        if metric is 'hamming_loss':
-            scores.append(score_function(
-                y_true=y_true[:, output].reshape(n_samples, -1),
-                y_pred=y_pred[:, output].reshape(n_samples, -1),
-                sample_weight=sample_weight))
-
-        # the following metrics do not support multi-class out of the box
-        # so averaging is needed
-        if metric in ['precision_score', 'recall_score', 'f1_score']:
-            scores.append(score_function(
-                y_true=y_true[:, output].reshape(n_samples, -1),
-                y_pred=y_pred[:, output].reshape(n_samples, -1),
-                labels=labels,
-                average=class_average,
-                sample_weight=sample_weight))
-
-        if metric is 'confusion_matrix':
-            scores.append(score_function(
-                y_true=y_true[:, output].reshape(n_samples, -1),
-                y_pred=y_pred[:, output].reshape(n_samples, -1),
-                labels=labels,
-                sample_weight=sample_weight))
+        scores.append(score_function(y_true_output, y_pred_output, **kwargs))
 
     scores = np.array(scores)
     if metric in ['accuracy_score', 'zero_one_loss',
                   'jaccard_similarity_score', 'hamming_loss', 'log_loss']:
         return _weighted_sum(scores, output_weight, output_normalize)
     elif metric in ['precision_score', 'recall_score', 'f1_score']:
-        if class_average is None:
+        if kwargs.get('average') is None:
             # return one output-average for each label
             avg_scores = np.zeros((n_labels,))
             for i in range(n_labels):
