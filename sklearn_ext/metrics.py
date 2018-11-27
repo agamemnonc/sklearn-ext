@@ -174,13 +174,17 @@ def accuracy_score(y_true, y_pred, normalize=True, sample_weight=None):
     ----------
     y_true : 1d array-like, or label indicator array / sparse matrix
         Ground truth (correct) labels.
+
     y_pred : 1d array-like, or label indicator array / sparse matrix
         Predicted labels, as returned by a classifier.
+
     normalize : bool, optional (default=True)
         If ``False``, return the number of correctly classified samples.
         Otherwise, return the fraction of correctly classified samples.
+
     sample_weight : array-like of shape = [n_samples], optional
         Sample weights.
+
     Returns
     -------
     score : float
@@ -189,13 +193,16 @@ def accuracy_score(y_true, y_pred, normalize=True, sample_weight=None):
         (int).
         The best performance is 1 with ``normalize == True`` and the number
         of samples with ``normalize == False``.
+
     See also
     --------
     hamming_score, hamming_loss, zero_one_loss
+
     Notes
     -----
     In binary and multiclass classification, this function is equal
     to the ``hamming_score`` function.
+
     Examples
     --------
     >>> import numpy as np
@@ -225,34 +232,44 @@ def accuracy_score(y_true, y_pred, normalize=True, sample_weight=None):
 
 def zero_one_loss(y_true, y_pred, normalize=True, sample_weight=None):
     """Zero-one classification loss.
+
     If normalize is ``True``, return the fraction of misclassifications
     (float), else it returns the number of misclassifications (int). The best
     performance is 0.
+
     Read more in the :ref:`User Guide <zero_one_loss>`.
+
     Parameters
     ----------
     y_true : 1d array-like, or label indicator array / sparse matrix
         Ground truth (correct) labels.
+
     y_pred : 1d array-like, or label indicator array / sparse matrix
         Predicted labels, as returned by a classifier.
+
     normalize : bool, optional (default=True)
         If ``False``, return the number of misclassifications.
         Otherwise, return the fraction of misclassifications.
+
     sample_weight : array-like of shape = [n_samples], optional
         Sample weights.
+
     Returns
     -------
     loss : float or int,
         If ``normalize == True``, return the fraction of misclassifications
         (float), else it returns the number of misclassifications (int).
+
     Notes
     -----
     In multilabel classification, the zero_one_loss function corresponds to
     the subset zero-one loss: for each sample, the entire set of labels must be
     correctly predicted, otherwise the loss for that sample is equal to one.
+
     See also
     --------
     accuracy_score, hamming_loss, jaccard_similarity_score
+
     Examples
     --------
     >>> from sklearn_ext.metrics import zero_one_loss
@@ -282,20 +299,26 @@ def zero_one_loss(y_true, y_pred, normalize=True, sample_weight=None):
 
 def hamming_score(y_true, y_pred, normalize=True, sample_weight=None):
     """Hamming classification score.
+
     In multilabel classification, this function computes label-based accuracy.
     Read more in the :ref:`User Guide <accuracy_score>`.
+
     Parameters
     ----------
     y_true : 1d array-like, or label indicator array / sparse matrix
         Ground truth (correct) labels.
+
     y_pred : 1d array-like, or label indicator array / sparse matrix
         Predicted labels, as returned by a classifier.
+
     labels : array, shape = [n_labels], optional (default=None)
         Integer array of labels. If not provided, labels will be inferred
         from y_true and y_pred.
         .. versionadded:: 0.18
+
     sample_weight : array-like of shape = [n_samples], optional
         Sample weights.
+
     Returns
     -------
     score : float
@@ -304,13 +327,16 @@ def hamming_score(y_true, y_pred, normalize=True, sample_weight=None):
         (int).
         The best performance is 1 with ``normalize == True`` and the number
         of samples with ``normalize == False``.
+
     See also
     --------
     accuracy_score, hamming_loss, zero_one_loss
+
     Notes
     -----
     In binary and multiclass classification, this function is equal
     to the ``accuracy_score`` function.
+
     Examples
     --------
     >>> import numpy as np
@@ -334,29 +360,37 @@ def hamming_score(y_true, y_pred, normalize=True, sample_weight=None):
 
 def hamming_loss(y_true, y_pred, normalize=True, sample_weight=None):
     """Compute the average Hamming loss.
+
     The Hamming loss is the fraction of labels that are incorrectly predicted.
     Read more in the :ref:`User Guide <hamming_loss>`.
+
     Parameters
     ----------
     y_true : 1d array-like, or label indicator array / sparse matrix
         Ground truth (correct) labels.
+
     y_pred : 1d array-like, or label indicator array / sparse matrix
         Predicted labels, as returned by a classifier.
+
     labels : array, shape = [n_labels], optional (default=None)
         Integer array of labels. If not provided, labels will be inferred
         from y_true and y_pred.
         .. versionadded:: 0.18
+
     sample_weight : array-like of shape = [n_samples], optional
         Sample weights.
         .. versionadded:: 0.18
+
     Returns
     -------
     loss : float or int,
         Return the average Hamming loss between element of ``y_true`` and
         ``y_pred``.
+
     See Also
     --------
     accuracy_score, jaccard_similarity_score, zero_one_loss
+
     Notes
     -----
     In multiclass classification, the Hamming loss correspond to the Hamming
@@ -376,6 +410,7 @@ def hamming_loss(y_true, y_pred, normalize=True, sample_weight=None):
            3(3), 1-13, July-September 2007.
     .. [2] `Wikipedia entry on the Hamming distance
            <https://en.wikipedia.org/wiki/Hamming_distance>`_
+
     Examples
     --------
     >>> from sklearn_ext.metrics import hamming_loss
@@ -387,7 +422,6 @@ def hamming_loss(y_true, y_pred, normalize=True, sample_weight=None):
     >>> hamming_loss(np.array([[0, 1], [1, 1]]), np.zeros((2, 2)))
     0.75
     """
-
     score = hamming_score(y_true, y_pred,
                           normalize=normalize,
                           sample_weight=sample_weight)
@@ -400,6 +434,7 @@ def hamming_loss(y_true, y_pred, normalize=True, sample_weight=None):
         else:
             n_samples = _num_samples(y_true)
         return n_samples - score
+
 
 def normalize_confusion_matrix(C):
     """Normalizes the rows of a confusion matrix so that their sum is equal to
@@ -416,6 +451,7 @@ def normalize_confusion_matrix(C):
         Normalized confusion matrix
     """
     return C / C.sum(axis=1)[:, np.newaxis]
+
 
 def multiclass_multioutput(metric, y_true, y_pred, output_normalize=True,
                            output_weight=None, **kwargs):
@@ -536,6 +572,6 @@ def multiclass_multioutput(metric, y_true, y_pred, output_normalize=True,
         for i in range(n_labels):
             for j in range(n_labels):
                 avg_cm[i, j] = _weighted_sum(
-                        scores[:,i,j], output_weight, output_normalize)
+                    scores[:, i, j], output_weight, output_normalize)
 
         return avg_cm
