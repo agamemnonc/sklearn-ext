@@ -138,6 +138,9 @@ def unique_labels(*ys):
     if ys_types == set(["binary", "multiclass"]):
         ys_types = set(["multiclass"])
 
+    if ys_types == set(['multiclass-multioutput', 'multilabel-indicator']):
+        ys_types = set(['multiclass-multioutput'])
+
     if len(ys_types) > 1:
         raise ValueError("Mix type of y not allowed, got types %s" % ys_types)
 
