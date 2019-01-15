@@ -456,7 +456,7 @@ def normalize_confusion_matrix(C):
     return C / C.sum(axis=1)[:, np.newaxis]
 
 
-def multiclass_multioutput(y_true, y_pred, metric, output_average = 'macro',
+def multiclass_multioutput(y_true, y_pred, metric, output_average='macro',
                            output_normalize=True, output_weight=None, **kwargs):
     """Extends classification metrics to support multiclass and multilabel
 
