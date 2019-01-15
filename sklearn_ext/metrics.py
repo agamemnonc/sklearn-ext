@@ -477,26 +477,28 @@ def multiclass_multioutput(y_true, y_pred, metric, output_average = 'macro',
 
     Parameters
     ----------
-    metric : string
-        One of {'accuracy_score', 'zero_one_loss', 'log_loss',
-        'jaccard_similarity_score', 'precision_score', 'recall_score',
-        'f1_score', 'confusion_matrix'}
-
     y_true : array-like
         Ground truth (correct) labels.
 
     y_pred : array-like
         Predicted labels, as returned by a classifier.
 
-    output_average : string
-        One of {None, 'macro'}
+    metric : str, ['accuracy_score', 'zero_one_loss', 'log_loss',
+        'jaccard_similarity_score', 'precision_score', 'recall_score',
+        'f1_score', 'confusion_matrix']
+
+    output_average : str, [None, 'macro' (default)]
+        Output average strategy.
+        If ``None``, the scores for each output are
+        returned. If ``macro``, an output macro-average is returned.
 
     output_weight : array-like of shape = [n_outputs], optional
-        Output weights.
+        Output weights. Only valid when output_average is set to ``macro``.
 
     output_normalize : bool, optional (default=True)
         If ``False``, return the sum of the computed scores for each label.
-        Otherwise, return their average.
+        Otherwise, return their average. Only valid when output_average is set
+        to ``macro``.
 
     **kwargs : additional arguments
         Additional parameters to be passed to score function.
