@@ -456,8 +456,8 @@ def normalize_confusion_matrix(C):
     return C / C.sum(axis=1)[:, np.newaxis]
 
 
-def multiclass_multioutput(y_true, y_pred, metric, output_normalize=True,
-                           output_weight=None, **kwargs):
+def multiclass_multioutput(y_true, y_pred, metric, output_average = 'macro',
+                           output_normalize=True, output_weight=None, **kwargs):
     """Extends classification metrics to support multiclass and multilabel
 
     The metric is calculated for each output independently (i.e. the metric
@@ -487,6 +487,9 @@ def multiclass_multioutput(y_true, y_pred, metric, output_normalize=True,
 
     y_pred : array-like
         Predicted labels, as returned by a classifier.
+
+    output_average : string
+        One of {None, 'macro'}
 
     output_weight : array-like of shape = [n_outputs], optional
         Output weights.
@@ -556,25 +559,30 @@ def multiclass_multioutput(y_true, y_pred, metric, output_normalize=True,
         scores.append(score_function(y_true_output, y_pred_output, **kwargs))
 
     scores = np.array(scores)
-    if metric in ['accuracy_score', 'zero_one_loss',
-                  'jaccard_similarity_score', 'hamming_loss', 'log_loss']:
-        return _weighted_sum(scores, output_weight, output_normalize)
-    elif metric in ['precision_score', 'recall_score', 'f1_score']:
-        if kwargs.get('average') is None:
-            # return one output-average for each label
-            avg_scores = np.zeros((n_labels,))
-            for i in range(n_labels):
-                avg_scores[i] = _weighted_sum(
-                    scores[:, i], output_weight, output_normalize)
-
-            return avg_scores
-        else:
+    if output_average == None:
+        return scores
+    elif output_average == 'macro':
+        if metric in ['accuracy_score', 'zero_one_loss',
+                      'jaccard_similarity_score', 'hamming_loss', 'log_loss']:
             return _weighted_sum(scores, output_weight, output_normalize)
-    elif metric is 'confusion_matrix':
-        avg_cm = np.zeros((n_labels, n_labels))
-        for i in range(n_labels):
-            for j in range(n_labels):
-                avg_cm[i, j] = _weighted_sum(
-                    scores[:, i, j], output_weight, output_normalize)
+        elif metric in ['precision_score', 'recall_score', 'f1_score']:
+            if kwargs.get('average') is None:
+                # return one output-average for each label
+                avg_scores = np.zeros((n_labels,))
+                for i in range(n_labels):
+                    avg_scores[i] = _weighted_sum(
+                        scores[:, i], output_weight, output_normalize)
 
-        return avg_cm
+                return avg_scores
+            else:
+                return _weighted_sum(scores, output_weight, output_normalize)
+        elif metric is 'confusion_matrix':
+            avg_cm = np.zeros((n_labels, n_labels))
+            for i in range(n_labels):
+                for j in range(n_labels):
+                    avg_cm[i, j] = _weighted_sum(
+                        scores[:, i, j], output_weight, output_normalize)
+
+            return avg_cm
+    else:
+        raise ValueError("Average setting not supported.")
