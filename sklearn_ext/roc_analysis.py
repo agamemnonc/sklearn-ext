@@ -170,7 +170,7 @@ class RocThreshold(object):
     def _compute_thresholds_tpr_threshold(self):
         """Estimate thresholds for strategy ``tpr_threshold``."""
         tpr_threshold = self._check_parameter_shape(self.tpr_threshold)
-        for c_ in enumerate(self.classes_):
+        for c_ in self.classes_:
             turning_point = np.where(self.tpr_[c_] > tpr_threshold[c_])[0][0]
             self.theta_opt_[c_] = self.thresholds_[c_][turning_point]
 
