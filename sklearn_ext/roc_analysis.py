@@ -87,6 +87,8 @@ class RocThreshold(object):
         self.roc_auc_ = dict()
         self.theta_opt_ = dict()
 
+        self._perform_checks()
+
     def fit(self, y_true, y_pred):
         """ Compute class-specific TPR, FPR and find optimal ROC thresholds.
 
@@ -122,22 +124,28 @@ class RocThreshold(object):
         elif self.strategy == 'min_perfect':
             self._compute_thresholds_min_perfect()
         elif self.strategy == 'fpr_threshold':
+            self._compute_thresholds_fpr_threshold()
+        elif self.strategy == 'tpr_threshold':
+            self._compute_thresholds_tpr_threshold()
+
+        self._check_thresholds_limits()
+
+    def _perform_checks(self):
+        """Check input arguments."""
+        valid_strategy = ['min_perfect', 'max_random', 'fpr_threshold',
+                          'tpr_threshold']
+        if self.strategy not in valid_strategy:
+            raise ValueError("Unrecognized strategy for estimating "
+                             "thresholds: {}.".format(self.strategy))
+
+        if self.strategy == 'fpr_threshold':
             if self.fpr_threshold is None:
                 raise ValueError("fpr_threshold strategy requires the "
                                  "fpr_threshold argument to be set.")
-            else:
-                self._compute_thresholds_fpr_threshold()
         elif self.strategy == 'tpr_threshold':
             if self.tpr_threshold is None:
                 raise ValueError("fpr_threshold strategy requires the "
                                  "fpr_threshold argument to be set.")
-            else:
-                self._compute_thresholds_tpr_threshold()
-        else:
-            raise ValueError("Unrecognized strategy for computing thresholds: "
-                             "{}.".format(self.strategy))
-
-        self._check_thresholds_limits()
 
     def _compute_thresholds_max_random(self):
         """Estimate thresholds for strategy ``max_random``."""
