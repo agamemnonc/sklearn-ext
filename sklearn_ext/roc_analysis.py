@@ -44,24 +44,25 @@ class RocThreshold(object):
 
     Attributes
     ----------
-    classes_ : array of shape (n_class,)
+    classes_ : array of shape (n_classes,)
         Holds the label for each class.
-    fpr_ : array, shape (n_thresholds,)
-        Increasing false positive rates such that element i is the false
-        positive rate of predictions with score >= thresholds[i].
-    tpr_ : array, shape (n_thresholds,)
-        Increasing true positive rates such that element i is the true
-        positive rate of predictions with score >= thresholds[i].
-    thresholds_ : array of shape (n_thresholds,)
-        Decreasing thresholds on the decision function used to compute
-        fpr and tpr. `thresholds[0]` represents no instances being predicted
-        and is arbitrarily set to `max(y_score) + 1`.
-    roc_auc_ : array of shape(n_class,)
+    fpr_ : dict, len [n_classes]
+        Each value is an array of shape (n_thresholds,) with increasing false
+        positive rates such that element i is the false positive rate of
+        predictions with score >= thresholds[i].
+    tpr_ : dict, len [n_classes]
+        Each value is an array of shape (n_thresholds,) with increasing true
+        positive rates such that element i is the true positive rate of
+        predictions with score >= thresholds[i].
+    thresholds_ : dict, len [n_classes]
+        Each value is an array of shape (n_thresholds,) with decreasing
+        thresholds on the decision function used to compute fpr and tpr.
+        `thresholds[0]` represents no instances being predicted and is
+        arbitrarily set to `max(y_score) + 1`.
+    roc_auc_ : dict, len [n_classes]
         Area under the curve metric for each class.
-    theta_opt_ : array of shape (n_class,)
+    theta_opt_ : dict, len [n_classes]
         Optimal thresholds for each class estimated with selected strategy.
-
-
     """
 
     def __init__(self,
@@ -137,29 +138,34 @@ class RocThreshold(object):
         self._check_thresholds_limits()
 
     def _compute_thresholds_max_random(self):
+        """Estimate thresholds for strategy ``max_random``."""
         for c_ in self.classes_:
             rnd_clf_tpr = np.linspace(0, 1, self.thresholds_[c_].size)
             self.theta_opt_[c_] = self.thresholds_[
                 c_][np.argmax(self.tpr_[c_] - rnd_clf_tpr)]
 
     def _compute_thresholds_min_perfect(self):
+        """Estimate thresholds for strategy ``min_perfect``."""
         for c_ in self.classes_:
             self.theta_opt_[c_] = self.thresholds_[c_][np.argmin(
                 np.sqrt((self.tpr_[c_] - 1)**2 + (self.fpr_[c_] - 0)**2))]
 
     def _compute_thresholds_fpr_threshold(self):
+        """Estimate thresholds for strategy ``fpr_threshold``."""
         fpr_threshold = self._check_parameter_shape(self.fpr_threshold)
         for c_ in self.classes_:
             turning_point = np.where(self.fpr_[c_] > fpr_threshold[c_])[0][0]
             self.theta_opt_[c_] = self.thresholds_[c_][turning_point - 1]
 
     def _compute_thresholds_tpr_threshold(self):
+        """Estimate thresholds for strategy ``tpr_threshold``."""
         tpr_threshold = self._check_parameter_shape(self.tpr_threshold)
         for c_ in enumerate(self.classes_):
             turning_point = np.where(self.tpr_[c_] > tpr_threshold[c_])[0][0]
             self.theta_opt_[c_] = self.thresholds_[c_][turning_point]
 
     def _check_thresholds_limits(self):
+        """If threshold bounds are provided adjust estimates."""
         if self.theta_min is not None:
             min_thresholds = self._check_parameter_shape(self.min_thresholds)
             for c_ in self.classes_:
@@ -175,16 +181,6 @@ class RocThreshold(object):
     def _check_parameter_shape(self, parameter):
         """If an array is passed for a parameter, make sure it has the correct
         shape. Othewise use the same value for all classes.
-
-        Parameters
-        ----------
-        parameter : array or float, shape (n_classes,)
-            Parameter.
-
-        Returns
-        -------
-        parameter : array, shape (n_classes,)
-            Parameter array.
         """
         if isinstance(parameter, dict):
             assert list(parameter.keys()) == list(le.classes_)
