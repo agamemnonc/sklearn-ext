@@ -107,7 +107,7 @@ class RocThreshold(object):
         self.classes_ = le.classes_
 
         for i, class_ in enumerate(self.classes_):
-            idx = np.where(y_true == i)
+            idx = np.where(y_true == class_)
             # Convert to one-vs-all classifier and estimate probabilities for
             # the instances belonging to the class
             y_onevsall = np.zeros_like(y_true)
