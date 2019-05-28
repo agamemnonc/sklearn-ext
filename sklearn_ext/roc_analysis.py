@@ -128,7 +128,7 @@ class RocThreshold(object):
         elif self.strategy == 'tpr_threshold':
             self._compute_thresholds_tpr_threshold()
 
-        self._check_thresholds_limits()
+        self._check_threshold_bounds()
 
     def _perform_checks(self):
         """Check input arguments."""
@@ -174,7 +174,7 @@ class RocThreshold(object):
             turning_point = np.where(self.tpr_[c_] > tpr_threshold[c_])[0][0]
             self.theta_opt_[c_] = self.thresholds_[c_][turning_point]
 
-    def _check_thresholds_limits(self):
+    def _check_threshold_bounds(self):
         """If threshold bounds are provided adjust estimates."""
         if self.theta_min is not None:
             min_thresholds = self._check_parameter_shape(self.min_thresholds)
@@ -183,10 +183,16 @@ class RocThreshold(object):
                     self.theta_opt_[c_] = min_thresholds[c_]
 
         if self.theta_max is not None:
-            max_thresholds = self._check_parameter_shape(self.min_thresholds)
+            max_thresholds = self._check_parameter_shape(self.max_thresholds)
             for c_ in self.classes_:
                 if self.theta_opt_[c_] > max_thresholds[c_]:
                     self.theta_opt_[c_] = max_thresholds[c_]
+
+        # Never allow thresholds > 1. This can happen if the first element
+        # of the threshold array is selected since it is arbitrarily set to
+        # ``max(y_score) + 1``.
+        for c_ in self.classes_:
+            self.theta_opt_[c_] = np.min([self.theta_opt_[c_], 1.])
 
     def _check_parameter_shape(self, parameter):
         """If an array is passed for a parameter, make sure it has the correct
