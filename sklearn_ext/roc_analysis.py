@@ -28,14 +28,18 @@ class RocThreshold(object):
     drop_intermediate : boolean, optional (default=True)
         Whether to drop some suboptimal thresholds when computing ROC curve
         metrics.
-    fpr_threshold : float or array of shape (n_class,), optional (default=None)
-        False positive rate max limit when using "fpr_threshold" strategy.
-    tpr_threshold : float or array of shape (n_class,), optional (default=None)
-        True positive rate min limit when using "tpr_threshold" strategy.
-    theta_max : float or array of shape (n_class,), optional (default=None)
-        Maximum allowed threshold(s).
-    theta_min : float or array of shape (n_class,), optional (default=None)
-        Minimum allowed threshold(s).
+    fpr_threshold : float or dict of len [n_classes], optional (default=None)
+        False positive rate max limit when using "fpr_threshold" strategy. If
+        a dict is provided, its keys must match those of the target variable.
+    tpr_threshold : float or dict of len [n_classes], optional (default=None)
+        True positive rate min limit when using "tpr_threshold" strategy. If
+        a dict is provided, its keys must match those of the target variable.
+    theta_max : float or dict of len [n_classes], optional (default=None)
+        Maximum allowed threshold(s). If a dict is provided, its keys must
+        match those of the target variable.
+    theta_min : float or dict of len [n_classes], optional (default=None)
+        Minimum allowed threshold(s).  If a dict is provided, its keys must
+        match those of the target variable.
 
 
     Attributes
@@ -144,42 +148,49 @@ class RocThreshold(object):
                 np.sqrt((self.tpr_[c_] - 1)**2 + (self.fpr_[c_] - 0)**2))]
 
     def _compute_thresholds_fpr_threshold(self):
-        if isinstance(self.fpr_threshold, (list, tuple, np.ndarray)):
-            fpr_threshold = self.fpr_threshold
-        else:
-            fpr_threshold = [self.fpr_threshold] * len(self.classes_)
-
+        fpr_threshold = self._check_parameter_shape(self.fpr_threshold)
         for c_ in self.classes_:
             turning_point = np.where(self.fpr_[c_] > fpr_threshold[c_])[0][0]
             self.theta_opt_[c_] = self.thresholds_[c_][turning_point - 1]
 
     def _compute_thresholds_tpr_threshold(self):
-        if isinstance(self.tpr_threshold, (list, tuple, np.ndarray)):
-            tpr_threshold = self.tpr_threshold
-        else:
-            tpr_threshold = [self.tpr_threshold] * len(self.classes_)
-
+        tpr_threshold = self._check_parameter_shape(self.tpr_threshold)
         for c_ in enumerate(self.classes_):
             turning_point = np.where(self.tpr_[c_] > tpr_threshold[c_])[0][0]
             self.theta_opt_[c_] = self.thresholds_[c_][turning_point]
 
     def _check_thresholds_limits(self):
         if self.theta_min is not None:
-            if isinstance(self.theta_min, (list, tuple, np.ndarray)):
-                min_thresholds = self.theta_min
-            else:
-                min_thresholds = [self.theta_min] * len(self.classes_)
-
+            min_thresholds = self._check_parameter_shape(self.min_thresholds)
             for c_ in self.classes_:
                 if self.theta_opt_[c_] < min_thresholds[c_]:
                     self.theta_opt_[c_] = min_thresholds[c_]
 
         if self.theta_max is not None:
-            if isinstance(self.theta_max, (list, tuple, np.ndarray)):
-                max_thresholds = self.theta_max
-            else:
-                max_thresholds = [self.theta_max] * len(self.classes_)
-
+            max_thresholds = self._check_parameter_shape(self.min_thresholds)
             for c_ in self.classes_:
                 if self.theta_opt_[c_] > max_thresholds[c_]:
                     self.theta_opt_[c_] = max_thresholds[c_]
+
+    def _check_parameter_shape(self, parameter):
+        """If an array is passed for a parameter, make sure it has the correct
+        shape. Othewise use the same value for all classes.
+
+        Parameters
+        ----------
+        parameter : array or float, shape (n_classes,)
+            Parameter.
+
+        Returns
+        -------
+        parameter : array, shape (n_classes,)
+            Parameter array.
+        """
+        if isinstance(parameter, dict):
+            assert list(parameter.keys()) == list(le.classes_)
+            return parameter
+        else:
+            parameter_dict = {}
+            for c_ in self.classes_:
+                parameter_dict[c_] = parameter
+            return parameter_dict
