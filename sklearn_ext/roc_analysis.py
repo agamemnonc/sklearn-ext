@@ -21,10 +21,12 @@ class RocThreshold(object):
         distance from line x=y).
         * "min_perfect": minimizes distance from perfect classifier (i.e.
         distance from point (0,1).
-        * "fpr_threshold": chooses the threshold that maximizes the true positive
-        rate (TPR), subject to false positive rate (FPR) < fpr_threshold.
-        * "tpr_threshold": chooses the threshold that minimizes the false positive
-        rate (FPR) subject to true positive rate (TPR) > tpr_threshold.
+        * "fpr_threshold": chooses the threshold that maximizes the true
+        positive rate (TPR), subject to false positive rate (FPR) <
+        fpr_threshold.
+        * "tpr_threshold": chooses the threshold that minimizes the false
+        positive rate (FPR) subject to true positive rate (TPR) >
+        tpr_threshold.
     drop_intermediate : boolean, optional (default=True)
         Whether to drop some suboptimal thresholds when computing ROC curve
         metrics.
@@ -94,9 +96,9 @@ class RocThreshold(object):
         y_true : array-like or label indicator matrix
             Ground truth (correct) labels for n_samples samples.
         y_pred : array-like of float, shape = (n_samples, n_classes)
-            Predicted probabilities, as returned by a classifier’s predict_proba method.
+            Predicted probabilities, as returned by a classifier’s
+            predict_proba method.
         """
-
 
         le = LabelEncoder()
         y_true = le.fit_transform(y_true)
@@ -121,14 +123,14 @@ class RocThreshold(object):
             self._compute_thresholds_min_perfect()
         elif self.strategy == 'fpr_threshold':
             if self.fpr_threshold is None:
-                raise ValueError("fpr_threshold strategy requires the fpr_threshold "
-                                 "argument to be set.")
+                raise ValueError("fpr_threshold strategy requires the "
+                                 "fpr_threshold argument to be set.")
             else:
                 self._compute_thresholds_fpr_threshold()
         elif self.strategy == 'tpr_threshold':
             if self.tpr_threshold is None:
-                raise ValueError("fpr_threshold strategy requires the fpr_threshold "
-                                 "argument to be set.")
+                raise ValueError("fpr_threshold strategy requires the "
+                                 "fpr_threshold argument to be set.")
             else:
                 self._compute_thresholds_tpr_threshold()
         else:
