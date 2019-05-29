@@ -1,5 +1,7 @@
 import numpy as np
 
+from sklearn.utils import check_array
+from sklearn.utils import check_consistent_length
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import roc_curve, auc
 
@@ -66,7 +68,6 @@ class RocThreshold(object):
     theta_opt_ : dict, len [n_classes]
         Optimal thresholds for each class estimated with selected strategy.
     """
-
     def __init__(self,
                  strategy='max_random',
                  drop_intermediate=False,
@@ -101,23 +102,23 @@ class RocThreshold(object):
             Predicted probabilities, as returned by a classifier’s
             predict_proba method.
         """
+        y_true = check_array(y_true, ensure_2d=False)
+        y_pred = check_array(y_pred, ensure_2d=False)
+        check_consistent_length(y_pred, y_true)
+        self.classes_ = np.unique(y_true)
 
-        le = LabelEncoder()
-        y_true = le.fit_transform(y_true)
-        self.classes_ = le.classes_
-
-        for i, class_ in enumerate(self.classes_):
-            idx = np.where(y_true == class_)
+        for i, c_ in enumerate(self.classes_):
+            idx = np.where(y_true == c_)
             # Convert to one-vs-all classifier and estimate probabilities for
             # the instances belonging to the class
             y_onevsall = np.zeros_like(y_true)
             y_onevsall[idx] = 1
             y_pred_onevsall = y_pred[:, i]
-            self.fpr_[class_], self.tpr_[class_], self.thresholds_[class_] = \
+            self.fpr_[c_], self.tpr_[c_], self.thresholds_[c_] = \
                 roc_curve(y_onevsall,
                           y_pred_onevsall,
                           drop_intermediate=self.drop_intermediate)
-            self.roc_auc_[class_] = auc(self.fpr_[class_], self.tpr_[class_])
+            self.roc_auc_[c_] = auc(self.fpr_[c_], self.tpr_[c_])
 
         if self.strategy == 'max_random':
             self._compute_thresholds_max_random()
@@ -195,11 +196,11 @@ class RocThreshold(object):
             self.theta_opt_[c_] = np.min([self.theta_opt_[c_], 1.])
 
     def _check_parameter_shape(self, parameter):
-        """If an array is passed for a parameter, make sure it has the correct
-        shape. Othewise use the same value for all classes.
+        """If an array is passed as an argument, make sure it has the correct
+        shape. Otherwise use the same value for all classes.
         """
         if isinstance(parameter, dict):
-            assert list(parameter.keys()) == list(le.classes_)
+            assert list(parameter.keys()) == list(self.classes_)
             return parameter
         else:
             parameter_dict = {}
