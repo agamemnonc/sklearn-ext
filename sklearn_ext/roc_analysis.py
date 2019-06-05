@@ -99,10 +99,10 @@ class RocThreshold(object):
         y_true : array-like or label indicator matrix
             Ground truth (correct) labels for n_samples samples.
         y_pred : array-like of float, shape = (n_samples, n_classes)
-            Predicted probabilities, as returned by a classifier’s
+            Predicted probabilities, as returned by a classifier’sa
             predict_proba method.
         """
-        y_true = check_array(y_true, ensure_2d=False)
+        y_true = check_array(y_true, ensure_2d=False, dtype=None)
         y_pred = check_array(y_pred, ensure_2d=False)
         check_consistent_length(y_pred, y_true)
         self.classes_ = np.unique(y_true)
@@ -111,7 +111,7 @@ class RocThreshold(object):
             idx = np.where(y_true == c_)
             # Convert to one-vs-all classifier and estimate probabilities for
             # the instances belonging to the class
-            y_onevsall = np.zeros_like(y_true)
+            y_onevsall = np.zeros_like(y_true, dtype=np.int)
             y_onevsall[idx] = 1
             y_pred_onevsall = y_pred[:, i]
             self.fpr_[c_], self.tpr_[c_], self.thresholds_[c_] = \
