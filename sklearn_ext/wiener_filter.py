@@ -4,6 +4,8 @@ import numpy as np
 from scipy.linalg import toeplitz
 from scipy.signal import lfilter
 
+from sklearn.base import BaseEstimator, RegressorMixin
+
 from sklearn.utils.validation import check_array, check_is_fitted
 from sklearn.utils import check_X_y
 from sklearn.metrics import r2_score
@@ -40,7 +42,7 @@ def _covf(X, M):
     return covariance
 
 
-class WienerFilter(object):
+class WienerFilter(BaseEstimator, RegressorMixin):
     """Wiener Filter regression.
 
     Parameters
