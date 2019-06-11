@@ -1,10 +1,10 @@
 from sklearn.utils.testing import assert_array_almost_equal
 
 from sklearn.datasets import make_blobs
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 
-from sklearn_ext.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn_ext.discriminant_analysis import RegularizedDiscriminantAnalysis
 
 
