@@ -1,5 +1,3 @@
-from __future__ import division
-
 from sklearn.preprocessing import MinMaxScaler
 
 __all__ = [
