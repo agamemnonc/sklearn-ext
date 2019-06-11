@@ -1,6 +1,5 @@
 import numpy as np
 
-
 from scipy.linalg import toeplitz
 from scipy.signal import lfilter
 

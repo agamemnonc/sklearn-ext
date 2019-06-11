@@ -68,6 +68,7 @@ class RocThreshold(object):
     theta_opt_ : dict, len [n_classes]
         Optimal thresholds for each class estimated with selected strategy.
     """
+
     def __init__(self,
                  strategy='max_random',
                  drop_intermediate=False,

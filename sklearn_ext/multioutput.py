@@ -20,6 +20,7 @@ from sklearn.utils.metaestimators import if_delegate_has_method
 __all__ = ['ClassifierChain',
            'ExtendedClassifierChain']
 
+
 class ClassifierChain(_BaseChain, ClassifierMixin, MetaEstimatorMixin):
     """A multi-label model that arranges binary classifiers into a chain.
     Each model makes a prediction in the order specified by the chain using
@@ -117,7 +118,7 @@ class ClassifierChain(_BaseChain, ClassifierMixin, MetaEstimatorMixin):
             Y_pred_chain[:, chain_idx] = estimator.predict(X_aug)
         inv_order = np.empty_like(self.order_)
         inv_order[self.order_] = np.arange(len(self.order_))
-        Y_prob = [ Y_prob_chain[i] for i in inv_order]
+        Y_prob = [Y_prob_chain[i] for i in inv_order]
 
         return Y_prob
 
@@ -146,9 +147,10 @@ class ClassifierChain(_BaseChain, ClassifierMixin, MetaEstimatorMixin):
 
         inv_order = np.empty_like(self.order_)
         inv_order[self.order_] = np.arange(len(self.order_))
-        Y_decision = [ Y_decision_chain[i] for i in inv_order]
+        Y_decision = [Y_decision_chain[i] for i in inv_order]
 
         return Y_decision
+
 
 class ExtendedClassifierChain(_BaseComposition, ClassifierMixin,
                               TransformerMixin):
@@ -204,8 +206,8 @@ class ExtendedClassifierChain(_BaseComposition, ClassifierMixin,
     """
 
     def __init__(self, base_estimator, n_chains=10, voting='hard',
-                  orders=None, cv=None, random_state=None, weights=None,
-                  n_jobs=None):
+                 orders=None, cv=None, random_state=None, weights=None,
+                 n_jobs=None):
         self.base_estimator = base_estimator
         self.n_chains = n_chains
         self.voting = voting
@@ -254,14 +256,15 @@ class ExtendedClassifierChain(_BaseComposition, ClassifierMixin,
 
         if self.orders is not None:
             if np.asarray(self.orders).shape != (self.n_chains, Y.shape[1]):
-                raise ValueError("Argument orders must have shape " + \
-                                 "(n_chains, n_outputs); expected {}, " + \
-                                 "but got {}.".format((self.n_chains, 
-                                          Y.shape[1]), self.orders.shape))
+                raise ValueError("Argument orders must have shape " +
+                                 "(n_chains, n_outputs); expected {}, " +
+                                 "but got {}.".format((self.n_chains,
+                                                       Y.shape[1]),
+                                                      self.orders.shape))
             else:
                 self.orders_ = self.orders
         else:
-            self.orders_ = [random_state.permutation(Y.shape[1]) for _ in \
+            self.orders_ = [random_state.permutation(Y.shape[1]) for _ in
                             range(self.n_chains)]
 
         self.le_ = []
@@ -270,13 +273,13 @@ class ExtendedClassifierChain(_BaseComposition, ClassifierMixin,
             le = LabelEncoder().fit(y)
             self.le_.append(le)
             self.classes_.append(le.classes_)
-            
+
         self.chains_ = [ClassifierChain(self.base_estimator,
                                         order=order,
                                         cv=self.cv) for order in self.orders_]
         self.chains_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(_parallel_fit_estimator)(clone(cc), X, Y,
-                        sample_weight) for cc in self.chains_)
+            delayed(_parallel_fit_estimator)(clone(cc), X, Y, \
+                sample_weight) for cc in self.chains_)
 
     def predict(self, X):
         """ Predict class labels for X.
@@ -291,13 +294,13 @@ class ExtendedClassifierChain(_BaseComposition, ClassifierMixin,
         for chain in self.chains_:
             for estimator in chain.estimators_:
                 check_is_fitted(estimator, 'coef_')
-        
+
         if self.voting == 'soft':
             proba = self.predict_proba(X)
             maj = np.zeros((X.shape[0], len(proba)))
             for output, proba_output in enumerate(proba):
                 maj[:, output] = self.le_[output].inverse_transform(
-                        np.argmax(proba_output, axis=1))
+                    np.argmax(proba_output, axis=1))
 
         else:  # 'hard' voting
             predictions = self._predict(X)
@@ -326,19 +329,19 @@ class ExtendedClassifierChain(_BaseComposition, ClassifierMixin,
         if self.voting == 'hard':
             raise AttributeError("predict_proba is not available when"
                                  " voting=%r" % self.voting)
-        #check_is_fitted(self, 'estimators_')
+        # check_is_fitted(self, 'estimators_')
         avg = list(np.average(self._collect_probas(X), axis=0,
-                         weights=self._weights_not_none))
+                              weights=self._weights_not_none))
         return avg
-    
+
     def _collect_probas(self, X):
         """Collect results from clf.predict calls. """
         return np.asarray([clf.predict_proba(X) for clf in self.chains_])
 
-    def _predict(self, X):  
+    def _predict(self, X):
         """Collect results from clf.predict calls. """
         return np.asarray([clf.predict(X) for clf in self.chains_]).T
-    
+
     @property
     def _weights_not_none(self):
         """Get the weights of not `None` estimators"""

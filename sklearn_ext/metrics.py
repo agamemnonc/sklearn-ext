@@ -456,7 +456,8 @@ def normalize_confusion_matrix(C):
 
 
 def multiclass_multioutput(y_true, y_pred, metric, output_average='macro',
-                           output_normalize=True, output_weight=None, **kwargs):
+                           output_normalize=True, output_weight=None,
+                           **kwargs):
     """Extends classification metrics to support multiclass and multilabel
 
     The metric is calculated for each output independently (i.e. the metric
@@ -560,7 +561,7 @@ def multiclass_multioutput(y_true, y_pred, metric, output_average='macro',
         scores.append(score_function(y_true_output, y_pred_output, **kwargs))
 
     scores = np.array(scores)
-    if output_average == None:
+    if output_average is None:
         return scores
     elif output_average == 'macro':
         if metric in ['accuracy_score', 'zero_one_loss',
