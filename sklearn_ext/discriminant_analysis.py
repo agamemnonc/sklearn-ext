@@ -273,19 +273,8 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
                              np.log(self.priors_[ind]))
             linear_coef.append(temp2)
             quad_coef.append(-0.5 * temp1)
-            ###
-#            invcovg = np.linalg.inv(covg)
-#            quadcoefg = -0.5 * invcovg
-#            linearcoefg = np.dot(meang, invcovg)
-#            interceptg = -0.5 * (np.linalg.slogdet(covg)[1] + \
-#                                 np.dot(meang, np.dot(invcovg,meang))) + \
-#                                 np.log(self.priors_[ind])
-
             means.append(meang)
             cov.append(covg)
-            # quad_coef.append(quadcoefg)
-            # linear_coef.append(linearcoefg)
-            # intercept.append(interceptg)
 
         self.means_ = np.asarray(means)
         self.covariances_ = np.asarray(cov)
@@ -300,17 +289,9 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
         X = check_array(X)
         norm2 = []
         for i in range(len(self.classes_)):
-            norm2.append(
-                self.intercept_[i] +
-                np.dot(
-                    self.linear_coef_[i],
-                    X.T) +
-                np.diag(
-                    np.dot(
-                        X,
-                        np.dot(
-                            self.quad_coef_[i],
-                            X.T))))
+            norm2.append(self.intercept_[i] +
+                         np.dot(self.linear_coef_[i], X.T) +
+                         np.diag(np.dot(X, np.dot(self.quad_coef_[i], X.T))))
         norm2 = np.array(norm2).T   # shape = [len(X), n_classes]
         return norm2
 
