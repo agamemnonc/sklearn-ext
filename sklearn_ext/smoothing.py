@@ -66,7 +66,7 @@ class MovingAverageSmoothing(_BaseSmoothing):
 
     Parameters
     ----------
-    k : int
+    k : int, optional, default: 3
         Number of previous samples to use for smoothing.
 
     weights : array, optional (default ones), shape = (k,)
@@ -74,7 +74,7 @@ class MovingAverageSmoothing(_BaseSmoothing):
         observation.
     """
 
-    def __init__(self, k, weights=None):
+    def __init__(self, k=3, weights=None):
 
         self.k = self._check_k(k)
         self.weights = self._check_weights(weights)
@@ -189,8 +189,13 @@ class SingleExponentialSmoothing(_ExponentialSmoothing):
 
     For t > 0:
     s_t = \alpha * x_t + \left(1 - \alpha\right) * s_{t-1}
+
+    Parameters
+    ---------
+    alpha : float, optional, default: 0.9
+        Smoothing parameter alpha.
     """
-    def __init__(self, alpha):
+    def __init__(self, alpha=0.9):
         self.alpha = self._check_smoothing_parameter(alpha)
         self.cache_ = None
 
@@ -220,8 +225,15 @@ class DoubleExponentialSmoothing(_ExponentialSmoothing):
         \left(s_{t-1} + b_{t-1} \right)
     b_t = \beta \left(s_t - s_{t-1}\right) +
         \left(1 - \beta\right) * b_{t-1}
+
+    Parameters
+    ---------
+    alpha : float, optional, default: 0.9
+        Smoothing parameter alpha.
+    beta : float, optional, default: 0.9
+        Smoothing parameter beta.
     """
-    def __init__(self, alpha, beta):
+    def __init__(self, alpha=0.9, beta=0.9):
         self.alpha = self._check_smoothing_parameter(alpha)
         self.beta = self._check_smoothing_parameter(beta)
         self.cache_ = [None] * 2
