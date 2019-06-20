@@ -5,8 +5,6 @@ Regularized Discriminant Analysis
 import warnings
 
 import numpy as np
-from sklearn.externals.six import string_types
-from sklearn.externals.six.moves import xrange
 
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.covariance import ledoit_wolf, empirical_covariance
@@ -40,7 +38,7 @@ def _cov(X, shrinkage=None):
         Estimated covariance matrix.
     """
     shrinkage = "empirical" if shrinkage is None else shrinkage
-    if isinstance(shrinkage, string_types):
+    if isinstance(shrinkage, str):
         if shrinkage == 'auto':
             sc = StandardScaler()  # standardize features
             X = sc.fit_transform(X)
@@ -250,7 +248,7 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
         quad_coef = []
         linear_coef = []
         intercept = []
-        for ind in xrange(n_classes):
+        for ind in range(n_classes):
             Xg = X[y == ind, :]
             meang = Xg.mean(0)
             if len(Xg) == 1:

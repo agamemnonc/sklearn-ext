@@ -9,7 +9,6 @@ from sklearn.utils.multiclass import type_of_target
 from sklearn.utils.multiclass import _unique_multiclass, _unique_indicator
 from sklearn.utils import check_array, check_consistent_length, column_or_1d
 from sklearn.utils.validation import _num_samples
-from sklearn.externals.six import string_types
 
 
 __all__ = [
@@ -160,7 +159,7 @@ def unique_labels(*ys):
     ys_labels = set(chain.from_iterable(_unique_labels(y) for y in ys))
 
     # Check that we don't mix string type with number type
-    if (len(set(isinstance(label, string_types) for label in ys_labels)) > 1):
+    if (len(set(isinstance(label, str) for label in ys_labels)) > 1):
         raise ValueError("Mix of label input types (string and number)")
 
     return np.array(sorted(ys_labels))
