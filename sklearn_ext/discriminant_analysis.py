@@ -171,12 +171,6 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
     intercept_ : array, shape (n_features,)
         Intercept term.
 
-
-
-    tol : float, optional, default 1.0e-4
-        Threshold used for rank estimation.
-
-
     Examples
     --------
     >>> from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
@@ -201,12 +195,11 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
     """
 
     def __init__(self, priors=None, reg_param_alpha=0., reg_param_gamma=0.,
-                 shrinkage=None, tol=1.0e-4):
+                 shrinkage=None):
         self.priors = np.asarray(priors) if priors is not None else None
         self.reg_param_alpha = reg_param_alpha
         self.reg_param_gamma = reg_param_gamma
         self.shrinkage = shrinkage
-        self.tol = tol
 
     def fit(self, X, y, tol=None):
         """Fit the model according to the given training data and parameters.
@@ -221,13 +214,6 @@ class RegularizedDiscriminantAnalysis(BaseEstimator, ClassifierMixin):
         y : array, shape = [n_samples]
             Target values (integers)
         """
-        if tol:
-            warnings.warn("The parameter 'tol' is deprecated as of version "
-                          "0.17 and will be removed in 0.19. The parameter is "
-                          "no longer necessary because the value is set via "
-                          "the estimator initialisation or set_params method.",
-                          DeprecationWarning)
-            self.tol = tol
         X, y = check_X_y(X, y)
         check_classification_targets(y)
         self.classes_, y = np.unique(y, return_inverse=True)
