@@ -7,5 +7,6 @@
 __version__ = '0.1.0dev'
 
 
-__all__ = ['discriminant_analysis', 'metrics', 'multioutput', 'preprocessing',
-           'roc_analysis', 'smoothing', 'wiener_filter']
+__all__ = ['discriminant_analysis', 'linear_regression_classification',
+           'metrics', 'multioutput', 'preprocessing', 'roc_analysis',
+           'smoothing', 'wiener_filter']
