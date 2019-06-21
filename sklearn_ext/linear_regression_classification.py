@@ -82,8 +82,8 @@ class LinearRegressionClassifier(BaseEstimator, ClassifierMixin):
         n_classes = len(self.classes_)
         D = np.zeros((n_samples, n_classes))
         for ind in range(n_classes):
-            D[:, ind] = np.linalg.norm(np.dot(X, np.eye(n_features)-self.hat_[ind]), axis=1)
+            D[:, ind] = np.linalg.norm(
+                np.dot(X, np.eye(n_features) - self.hat_[ind]),
+                axis=1)
 
-        pred = np.argmin(D, axis=1)
-
-        return pred
+        return np.argmin(D, axis=1)
