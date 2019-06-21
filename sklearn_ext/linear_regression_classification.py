@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import check_X_y
 from sklearn.utils.multiclass import check_classification_targets
-from sklearn.metrics.pairwise import pairwise_kernels
+
 
 __all__ = ['LinearRegressionClassifier']
 
@@ -60,7 +60,7 @@ class LinearRegressionClassifier(BaseEstimator, ClassifierMixin):
 
         for ind in range(n_classes):
             Xg = X[y == ind, :]
-            Gg = pairwise_kernels(Xg, Xg, metric="linear")
+            Gg = np.dot(Xg, Xg.T)
             self.hat_.append(np.dot(np.dot(Xg.T, np.linalg.inv(Gg)), Xg))
 
         return self
@@ -82,8 +82,7 @@ class LinearRegressionClassifier(BaseEstimator, ClassifierMixin):
         n_classes = len(self.classes_)
         D = np.zeros((n_samples, n_classes))
         for ind in range(n_classes):
-            D[:, ind] = np.linalg.norm(
-                np.dot(X, np.eye(n_features) - self.hat_[ind]), axis=1)
+            D[:, ind] = np.linalg.norm(np.dot(X, np.eye(n_features)-self.hat_[ind]), axis=1)
 
         pred = np.argmin(D, axis=1)
 
