@@ -65,6 +65,30 @@ class LinearRegressionClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
+    def decision_function(self, X):
+        """Apply decision function to an array of samples.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+            Array of samples (test vectors).
+
+        Returns
+        -------
+        C : array, shape = [n_samples, n_classes] or [n_samples,]
+            Decision function values related to each class, per sample.
+            In the two-class case, the shape is [n_samples,].
+        """
+        n_samples, n_features = X.shape
+        n_classes = len(self.classes_)
+        dec_func = np.zeros((n_samples, n_classes))
+        for ind in range(n_classes):
+            dec_func[:, ind] = np.linalg.norm(
+                np.dot(X, np.eye(n_features) - self.hat_[ind]),
+                axis=1)
+
+        return dec_func
+
     def predict(self, X):
         """Perform classification on an array of test vectors X.
 
@@ -73,17 +97,11 @@ class LinearRegressionClassifier(BaseEstimator, ClassifierMixin):
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
+            Array of samples (test vectors).
 
         Returns
         -------
         C : array, shape = [n_samples,]
         """
-        n_samples, n_features = X.shape
-        n_classes = len(self.classes_)
-        D = np.zeros((n_samples, n_classes))
-        for ind in range(n_classes):
-            D[:, ind] = np.linalg.norm(
-                np.dot(X, np.eye(n_features) - self.hat_[ind]),
-                axis=1)
-
+        D = self.decision_function(X)
         return np.argmin(D, axis=1)
