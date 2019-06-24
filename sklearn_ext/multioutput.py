@@ -13,7 +13,7 @@ from sklearn.utils import check_array, check_X_y, check_random_state
 from sklearn.utils.validation import has_fit_parameter, check_is_fitted
 from sklearn.utils.metaestimators import _BaseComposition
 from sklearn.multioutput import _BaseChain
-from sklearn.ensemble.voting_classifier import _parallel_fit_estimator
+from sklearn.ensemble.voting import _parallel_fit_estimator
 
 from sklearn.utils.metaestimators import if_delegate_has_method
 
