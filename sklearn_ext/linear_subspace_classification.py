@@ -7,11 +7,11 @@ from sklearn.utils import check_X_y
 from sklearn.utils.multiclass import check_classification_targets
 
 
-__all__ = ['LinearRegressionClassifier']
+__all__ = ['LinearSubspaceClassifier']
 
 
-class LinearRegressionClassifier(BaseEstimator, ClassifierMixin):
-    """Linear Regression Classifier
+class LinearSubspaceClassifier(BaseEstimator, ClassifierMixin):
+    """Linear Subspace Classifier
 
     The classifier works by comparing the distance of a test point to the
     subspace spanned by the collection of training points in each class. It
@@ -31,7 +31,7 @@ class LinearRegressionClassifier(BaseEstimator, ClassifierMixin):
     """
 
     def __init__(self):
-        super(LinearRegressionClassifier, self).__init__()
+        super(LinearSubspaceClassifier, self).__init__()
 
     def fit(self, X, y):
         """Fit the model according to the given training data and parameters.
