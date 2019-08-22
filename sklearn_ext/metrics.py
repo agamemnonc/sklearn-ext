@@ -2,7 +2,6 @@ from itertools import chain
 
 import warnings
 import numpy as np
-from scipy.sparse import coo_matrix
 
 from sklearn import metrics
 from sklearn.utils.multiclass import type_of_target
@@ -13,11 +12,10 @@ from sklearn.utils.validation import _num_samples
 
 __all__ = [
     'accuracy_score',
-    'hamming_score',
-    'zero_one_loss',
     'hamming_loss',
+    'hamming_score',
     'multiclass_multioutput',
-    'confusion_matrix'
+    'zero_one_loss'
 ]
 
 
@@ -520,7 +518,7 @@ def multiclass_multioutput(y_true, y_pred, metric, output_average='macro',
         raise ValueError("{} score not supported.".format(metric))
 
     score_function = getattr(metrics, metric)
-    if metric is 'log_loss':
+    if metric == 'log_loss':
         for y_output in y_pred:
             y_output = check_array(y_output, ensure_2d=False)
     else:
@@ -552,7 +550,7 @@ def multiclass_multioutput(y_true, y_pred, metric, output_average='macro',
     scores = []
     for output in range(n_outputs):
         y_true_output = y_true[:, output].reshape(n_samples, -1)
-        if metric is 'log_loss':
+        if metric == 'log_loss':
             y_pred_output = y_pred[output]
         else:
             y_pred_output = y_pred[:, output].reshape(n_samples, -1)
@@ -577,7 +575,7 @@ def multiclass_multioutput(y_true, y_pred, metric, output_average='macro',
                 return avg_scores
             else:
                 return _weighted_sum(scores, output_weight, output_normalize)
-        elif metric is 'confusion_matrix':
+        elif metric == 'confusion_matrix':
             avg_cm = np.zeros((n_labels, n_labels))
             for i in range(n_labels):
                 for j in range(n_labels):
