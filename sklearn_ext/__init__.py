@@ -12,6 +12,7 @@ __all__ = [
     'linear_subspace_classification',
     'metrics',
     'multioutput',
+    'neural_network',
     'preprocessing',
     'roc_analysis',
     'smoothing',
